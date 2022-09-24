@@ -16,8 +16,7 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick Widgets Gui Core5Compat
 
 set(PROJECT_SOURCES
         main.cpp
-        qml.qrc
-
+        
         aliasdisplay.cpp
         aliasdisplay.h
         bargraph.cpp
