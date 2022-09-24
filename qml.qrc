@@ -1,7 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>main.qml</file>
-        <file>icons/toolbar/pwrOffLg.png</file>
-        <file>icons/toolbar/pwrOnLg.png</file>
-    </qresource>
-</RCC>
