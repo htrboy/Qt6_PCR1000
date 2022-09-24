@@ -21,12 +21,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include "filterctrl.h"
 #include <stdio.h>
 
 FilterCtrl::FilterCtrl( QWidget *parent, const char *name)
-	: QWidget( parent, name )
+    : QWidget( parent )
 {
 	wide = new QPushButton("WIDE", this );
 	nar  = new QPushButton("NAR",  this );
@@ -35,17 +35,21 @@ FilterCtrl::FilterCtrl( QWidget *parent, const char *name)
 	tsnar = new QPushButton( "-", this );
 	tslabel = new QLabel("TS", this );
 
-	// Bug fixed: Dave, VK5DG. IF shift ranges 0-->255
-	ifshift = new QSlider( 0, 255, 1, DEFAULT_IFSHIFT, Qt::Horizontal, this );
+    // code update
+    ifshift = new QSlider(Qt::Horizontal, this);
+    ifshift->setRange(0, 255);
 
-	wide->setFocusPolicy( NoFocus );
-	nar->setFocusPolicy( NoFocus );
-	reset->setFocusPolicy( NoFocus );
-	tswide->setFocusPolicy( NoFocus );
-	tsnar->setFocusPolicy( NoFocus );
-	ifshift->setFocusPolicy( NoFocus );
+    // Bug fixed: Dave, VK5DG. IF shift ranges 0-->255
+    //ifshift = new QSlider( 0, 255, 1, DEFAULT_IFSHIFT, Qt::Horizontal, this );
 
-	setBackgroundColor( Qt::darkGray );
+    wide->setFocusPolicy( Qt::NoFocus );
+    nar->setFocusPolicy( Qt::NoFocus );
+    reset->setFocusPolicy( Qt::NoFocus );
+    tswide->setFocusPolicy( Qt::NoFocus );
+    tsnar->setFocusPolicy( Qt::NoFocus );
+    ifshift->setFocusPolicy( Qt::NoFocus );
+
+    //setBackgroundColor( Qt::darkGray );
 	wide->setFont( QFont("Time", 8));
 	nar->setFont( QFont("Time", 8));
 	reset->setFont( QFont("Time", 8));
@@ -125,4 +129,3 @@ void FilterCtrl::ifShiftUpdate(ifshift_t shift)
 {
   ifshift->setValue(shift);
 }
-*/

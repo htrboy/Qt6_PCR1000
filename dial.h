@@ -24,11 +24,15 @@
 
 #ifndef DIAL_H_
 #define DIAL_H_
-/*
-#include <qwidget.h>
-#include <qtimer.h>
-#include <qbitmap.h>
-#include <qrangecontrol.h>
+
+#include <QWidget>
+#include <QTimer>
+#include <QBitmap>
+
+//#include <qrangecontrol.h> // obsolete
+#include <QAbstractSlider>
+#include <QAbstractButton>
+#include <QPushButton>
 
 #define DIAL_STEPANGLE 10
 #define DIAL_TIMESTEP  100
@@ -42,7 +46,8 @@ public:
 	void setRange(int min, int max, int val);
 
 public slots:
-        void updateValue(int); 
+    void updateValue(int);
+
 signals:
 	void turnRight();
 	void turnLeft(); 
@@ -60,12 +65,14 @@ protected:
 private:
 	int ang;
 	int max, min;
-	QRangeControl range;
+    QAbstractSlider range;
 	bool reportValue;
 	QBitmap *maskBitmap;
 	QTimer autoRepeatTimer;
-	ButtonState state;
+    QAbstractButton *button = new QPushButton(tr("power"), this);
+
+    //QAbstractButton.down() =  state;
 };
-*/
+
 #endif // DIAL_H_
 

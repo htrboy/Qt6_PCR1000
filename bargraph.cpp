@@ -30,13 +30,14 @@
 #include <QMouseEvent>
 
 BarGraph::BarGraph( QWidget *parent, const char *name)
-  : QWidget( )
+  : QWidget( parent )
 {
-  memset(data, 0, 256);
+    memset(data, 0, 256);
+  //bzero(data, 256); // deprecated
   nsamples = 0;
   active = true;
   setPalette( QPalette( Qt::black ) );
-  setFocusPolicy( Qt::ClickFocus );
+//  setFocusPolicy( ClickFocus );
 }
 
 
@@ -52,7 +53,7 @@ void BarGraph::setData(const unsigned char *bandScope, unsigned char val)
 
 void BarGraph::setZero()
 {
-  memset(data, 0, 256);
+  //bzero(data, 256);
   repaint();
 }
 
@@ -104,9 +105,9 @@ void BarGraph::paintEvent( QPaintEvent * )
 
 
 //
-// mousePressEvent captures when a user clicks on the graph
+// mousrPressEvent captures when user press on the graph
 // to change freqency. It sends a signal stepFreq( int )
-// the integer begins how many steps to shift
+// the integer begin how many steps to shift
 //
 void BarGraph::mousePressEvent( QMouseEvent *e )
 {
@@ -116,5 +117,3 @@ void BarGraph::mousePressEvent( QMouseEvent *e )
 
 	emit stepFreq( (int) rint(bar) );
 }
-
-

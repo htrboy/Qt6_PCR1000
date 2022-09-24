@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include <qtooltip.h>
 
 #include "bmtree.h"
@@ -30,7 +30,7 @@
 /////////////       Create Dialog Windows            //////////
 ///////////////////////////////////////////////////////////////
 BookmarkTree::BookmarkTree( QWidget * parent, const char * name)
-  : QDialog(parent, name)
+  : QDialog(parent)
 {
   // dummy pointer to setup dialog
   QGroupBox   *GBoxPtr;
@@ -38,7 +38,8 @@ BookmarkTree::BookmarkTree( QWidget * parent, const char * name)
   QFrame      *FramePtr;
 
   // set variables to default values
-  bzero( &bm, sizeof(bm));
+  memset( &bm, 0, sizeof(bm));
+  //bzero( &bm, sizeof(bm)); // obsolete
   bm.freq     = DEFAULT_FREQ;
   bm.mode     = DEFAULT_MODE;
   bm.filter   = DEFAULT_FILTER;
@@ -55,11 +56,14 @@ BookmarkTree::BookmarkTree( QWidget * parent, const char * name)
 
   // create frame and grid for right side
   FramePtr  = new QFrame( this );
-  RightGrid = new QGridLayout( FramePtr, 3 , 1);
+  //RightGrid = new QGridLayout( FramePtr, 3 , 1);
+  RightGrid = new QGridLayout();
+  RightGrid->addWidget(FramePtr, 3, 1, Qt::AlignRight);
 
   // create group boxs to hold channel buttons
   GBoxPtr = new QGroupBox( FramePtr );
-  GBoxPtr->setColumnLayout(3, QGroupBox::Vertical);
+  GBoxPtr->setAlignment(3);
+  //GBoxPtr->setColumnLayout(3, QGroupBox::Vertical);
   GBoxPtr->setTitle( "Channel" );
 
   // create channel buttons
@@ -72,10 +76,10 @@ BookmarkTree::BookmarkTree( QWidget * parent, const char * name)
 
   // the buttons has no keyboard focus, preventing 
   // accidental clicked
-  addButton->setFocusPolicy( NoFocus );
-  folderButton->setFocusPolicy( NoFocus );
-  updateButton->setFocusPolicy( NoFocus );
-  deleteButton->setFocusPolicy( NoFocus );
+  addButton->setFocusPolicy( Qt::NoFocus );
+  folderButton->setFocusPolicy( Qt::NoFocus );
+  updateButton->setFocusPolicy( Qt::NoFocus );
+  deleteButton->setFocusPolicy( Qt::NoFocus );
 
   // connect buttons to handlers
   connect(addButton, SIGNAL(clicked()),
@@ -101,7 +105,8 @@ BookmarkTree::BookmarkTree( QWidget * parent, const char * name)
 
   // create group box to hold file buttons
   GBoxPtr = new QGroupBox( FramePtr );
-  GBoxPtr->setColumnLayout(1, QGroupBox::Vertical);
+  GBoxPtr->setAlignment(3);
+  //GBoxPtr->setColumnLayout(1, QGroupBox::Vertical);
   GBoxPtr->setTitle("File");
 
   // create files buttons
@@ -109,8 +114,8 @@ BookmarkTree::BookmarkTree( QWidget * parent, const char * name)
   saveButton = new QPushButton("Save", GBoxPtr);
 
   // again they have no keyboard focus
-  loadButton->setFocusPolicy( NoFocus );
-  saveButton->setFocusPolicy( NoFocus );
+  loadButton->setFocusPolicy( Qt::NoFocus );
+  saveButton->setFocusPolicy( Qt::NoFocus );
 
   // connect buttons to handlers
   connect(loadButton, SIGNAL(clicked()),
@@ -123,12 +128,13 @@ BookmarkTree::BookmarkTree( QWidget * parent, const char * name)
   RightGrid->addWidget( GBoxPtr, 2, 0); 
 
   // create label box
-  info = new QMultiLineEdit( FramePtr );
+  info = new QTextEdit( FramePtr );
+  //info = new QMultiLineEdit( FramePtr );
 
   // set property for the beauty
   info->setFrameStyle(QFrame::Panel | QFrame::Sunken);
   info->setReadOnly( true );
-  info->setWordWrap( QMultiLineEdit::WidgetWidth );
+  info->setWordWrapMode( QTextOption::WordWrap );
 
   // add label box to grid and make it recieves 
   // largest area
@@ -137,13 +143,20 @@ BookmarkTree::BookmarkTree( QWidget * parent, const char * name)
 
   // create objects to handles channels database
   bmData = new BookmarkData();
+  bmHeader = new QHeaderView(Qt::Vertical);
 
   // create listview to display above database
-  bmList = new QListView( this );
+  //bmList = new QListView( this );
+  bmList = new QTableView( this );
+  bmList->columnAt(0);
+  bmList->columnAt(1);
+  bmList->columnAt(2);
 
   // set styles
   bmList->setFrameStyle( QFrame::NoFrame );
-  bmList->setRootIsDecorated( true );
+
+  //bmList->setRootIsDecorated( true );
+
   bmList->addColumn("Frequency");
   bmList->addColumn("Mode");
   bmList->addColumn("Alias");
@@ -160,18 +173,26 @@ BookmarkTree::BookmarkTree( QWidget * parent, const char * name)
       this,SLOT(SelectionChangedSlot(QListViewItem *)));
 
   // create 2x1 grid for whole dialog
-  MainGrid  = new QGridLayout( this, 1, 2); 
+  MainGrid = new QGridLayout();
+  MainGrid->cellRect(1,2);
+  //MainGrid  = new QGridLayout( this, 1, 2);
 
   // both left and right
   MainGrid->addWidget( bmList, 0, 0);
-  MainGrid->setColStretch( 0, 10 );
+  MainGrid->columnStretch(0);
+  //MainGrid->setColStretch( 0, 10 );
   MainGrid->addWidget( FramePtr, 0, 1);
   
   // add tool tip
-  QToolTip::add(addButton,"Add channel to current folder");
-  QToolTip::add(folderButton,"Create new folder");
-  QToolTip::add(updateButton,"Overwrite radio status\nto current channel");
-  QToolTip::add(deleteButton,"Delete current channel");
+  addButton->setToolTip("Add Channel to current folder");
+  folderButton->setToolTip("Create new folder");
+  updateButton->setToolTip("Overwriteradio status\nto current channel");
+  deleteButton->setToolTip("Delete current channel");
+
+  //QToolTip::add(addButton,"Add channel to current folder");
+  //QToolTip::add(folderButton,"Create new folder");
+  //QToolTip::add(updateButton,"Overwrite radio status\nto current channel");
+  //QToolTip::add(deleteButton,"Delete current channel");
 
   updateGeometry();
 }
@@ -376,4 +397,3 @@ void BookmarkTree::SelectionChangedSlot(QListViewItem *currentItem)
 /////////////////////////////////////
 QSize BookmarkTree::sizeHint() const
 { return QSize( 500, 400); }
-*/

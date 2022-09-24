@@ -24,18 +24,16 @@
 
 #ifndef TIPS_H_
 #define TIPS_H_
-/*
+
 #define TIPS_SIZE 7
-char *QtPcrTips[TIPS_SIZE] = {
-"Tips: Click HERE to open edit box. You can use \nedit box to enter extra info for channel",
-"Tips: To edit Alias, just double click area \nabove frequency display",
-"Tips: When you make changes, don't forget to \nclick update button in Channel dialog",
-"Tips: While scanning frequency, it is a good \nidea to turn off your monitor. Try it!",
-"Tips: If you leave SCOPE button on while scaning \nfrequency, you'll see some cool effects",
-"Tips: To de-selecte items in Channal dialog, \nclick right button",
-"Tips: To change folder name, just double click it"
+const char *QtPcrTips[TIPS_SIZE] = {
+//"Tips: Click HERE to open edit box. You can use \nedit box to enter extra info for channel",
+//"Tips: To edit Alias, just double click area \nabove frequency display",
+//"Tips: When you make changes, don't forget to \nclick update button in Channel dialog",
+//"Tips: While scanning frequency, it is a good \nidea to turn off your monitor. Try it!",
+//"Tips: If you leave SCOPE button on while scaning \nfrequency, you'll see some cool effects",
+//"Tips: To de-selecte items in Channal dialog, \nclick right button",
+//"Tips: To change folder name, just double click it"
 };
 
-*/
 #endif // TIPS_H_
-

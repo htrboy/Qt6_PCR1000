@@ -21,9 +21,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include "bmdata.h"
-#include <qinputdialog.h>
+#include <QInputDialog>
+#include <QPainter>
+
+//#include <qinputdialog.h>
 
 ///////////////////////////////////////////////////////
 ////////  CLASS BookmarkItem                 //////////
@@ -33,21 +36,21 @@
 /////////////////////////////////////
 ////   Constructor sets          ////
 /////////////////////////////////////
-BookmarkItem::BookmarkItem (QListView *parent)
-  : QListViewItem( parent )
+BookmarkItem::BookmarkItem (QListWidget *parent)
+  : QListWidget( parent )
 {  SetDefault(); }
 
-BookmarkItem::BookmarkItem (QListView *parent, BookmarkItem *after)
-  : QListViewItem( parent, after )
+BookmarkItem::BookmarkItem (QListWidget *parent, QListWidgetItem *after)
+  : QListWidget( parent )
 {  SetDefault(); }
 
-BookmarkItem::BookmarkItem (QListViewItem *parent)
-  : QListViewItem( parent )
-{  SetDefault(); }
+//BookmarkItem::BookmarkItem (QListViewItem *parent)
+//  : QListViewItem( parent )
+//{  SetDefault(); }
 
-BookmarkItem::BookmarkItem (QListViewItem *parent, BookmarkItem *after)
-  : QListViewItem( parent, after )
-{  SetDefault(); }
+//BookmarkItem::BookmarkItem (QListViewItem *parent, BookmarkItem *after)
+//  : QListViewItem( parent, after )
+//{  SetDefault(); }
 
 
 ////////////////////////////////////////////
@@ -68,7 +71,8 @@ void BookmarkItem::setIsFolderBegin( bool flag ){ folderBegin = flag;}
 /////  Set variables to default values   ////
 /////////////////////////////////////////////
 void BookmarkItem::SetDefault(){
-  bzero(&bm, sizeof(bm));
+    memset(&bm, 0, sizeof(bm));
+  //bzero(&bm, sizeof(bm));
   bm.freq    = DEFAULT_FREQ;
   bm.mode    = DEFAULT_MODE;
   bm.filter  = DEFAULT_FILTER;
@@ -121,7 +125,8 @@ void BookmarkItem::fillColumnText()
 
   // frequency (1st col)
   freqstr.setNum(bm.freq);
-  setText(0,freqstr);
+
+  insertItem(0,freqstr);
   
   // mode (2nd col)
   switch(bm.mode){
@@ -132,17 +137,17 @@ void BookmarkItem::fillColumnText()
   case MODE_AM:  freqstr = "AM" ; break;
   default: freqstr = "ERROR";
   }
-  setText(1, freqstr);
+  insertItem(1, freqstr);
 
   // alias (3rd col)
-  setText(2, bm.alias);
+  insertItem(2, bm.alias);
 }
 
 
 ////////////////////////////////////////
 ///// Overwrite paint focus. No paint //
 ////////////////////////////////////////
-void BookmarkItem::paintFocus ( QPainter *, const QColorGroup & cg, const QRect & r )
+void BookmarkItem::paintFocus ( QPainter *, const QPalette & cg, const QRect & r )
 {
 }
 
@@ -154,9 +159,10 @@ void BookmarkItem::paintFocus ( QPainter *, const QColorGroup & cg, const QRect 
 QString BookmarkItem::key ( int col, bool ) const
 {
   if( col == 0 )
-    return text(0).rightJustify(10, '0');
+      return item(0); //->toString();
+    //return item(0)->rightJustify(10, '0');
   else
-    return text(col);
+    return item(col);
 }
 
 
@@ -167,10 +173,10 @@ QString BookmarkItem::key ( int col, bool ) const
 ///// to us more flexibily to adjust ///
 ///// color and style                ///
 ////////////////////////////////////////
-void BookmarkItem::paintCell ( QPainter * p, const QColorGroup & cg, 
+void BookmarkItem::paintCell ( QPainter * p, const QPalette & cg,
 			       int column, int width, int align )
 {
-  QColorGroup _cg(cg);
+  QPalette _cg(cg);
   bool isFolder = false;
   QString str = bm.alias;
 
@@ -182,14 +188,14 @@ void BookmarkItem::paintCell ( QPainter * p, const QColorGroup & cg,
      align = Qt::AlignLeft;
   }
 
-  if(isSelected() && !isFolder){
-     _cg.setColor (QColorGroup::HighlightedText, Qt::red );
-     _cg.setColor (QColorGroup::Text, Qt::red );
-     _cg.setColor (QColorGroup::Highlight, Qt::green);
-     _cg.setColor (QColorGroup::Base, Qt::green);
+  if(p->isActive() && !isFolder){
+     _cg.setColor (QPalette::HighlightedText, Qt::red );
+     _cg.setColor (QPalette::Text, Qt::red );
+     _cg.setColor (QPalette::Highlight, Qt::green);
+     _cg.setColor (QPalette::Window, Qt::green);
   }
 
-  QListViewItem::paintCell (p, _cg, column, width, align);
+  paintCell (p, _cg, column, width, align);
 }
 
 
@@ -205,7 +211,7 @@ void BookmarkItem::paintCell ( QPainter * p, const QColorGroup & cg,
 BookmarkData::BookmarkData()
 {
   // set filename to null
-  dataFile.setName( QString::null );
+  dataFile.rename( QString() );
 }
 
 
@@ -221,10 +227,10 @@ bool BookmarkData::Load(QListView *bmList)
   // open file dialog and set filename
   fname = QFileDialog::getOpenFileName();
   if(fname.isEmpty()) return false;
-  dataFile.setName( fname );
+  dataFile.rename( fname );
 
   // open file
-  if(!dataFile.open(IO_ReadOnly))
+  if(!dataFile.open(QIODevice::ReadOnly))
     return false;
 
   // fill data
@@ -290,10 +296,10 @@ bool BookmarkData::Save(QListView *bmList){
   fname = QFileDialog::getSaveFileName();
 
   if(fname.isEmpty()) return false;
-  dataFile.setName( fname );
+  dataFile.rename( fname );
   
 
-  if(!dataFile.open(IO_WriteOnly|IO_Truncate)){
+  if(!dataFile.open(QIODevice::WriteOnly | QIODevice::Truncate)){
       return false;
   }
 
@@ -323,7 +329,8 @@ bool BookmarkData::ReadEntry(struct bookmark_t *data)
   QString str;
   int i;
 
-  bzero(buf,1024);
+  memset(buf, 0, 1024);
+  //bzero(buf,1024); // deprecated
 
   i = dataFile.readLine( buf, 1024 );
 
@@ -338,33 +345,33 @@ bool BookmarkData::ReadEntry(struct bookmark_t *data)
   ptr = buf;
 
   // alias
-  i = str.find(",",0);
+  i = str.indexOf(",",0);
   if(i < 0) return false;
   buf[i] = '\0';
-  strncpy(data->alias,ptr,ALIASSIZE);
+  strncpy_s(data->alias,ptr,ALIASSIZE);
   ptr = buf+i+1;
 
   // freq
-  i = str.find(",",i+1);
+  i = str.indexOf(",",i+1);
   if(i < 0) return false;
   buf[i] = '\0';
-  strncpy(numbuf,ptr,64);
+  strncpy_s(numbuf,ptr,64);
   ptr = buf+i+1;
   data->freq = QString(numbuf).toULong();
 
   // ts
-  i = str.find(",",i+1);
+  i = str.indexOf(",",i+1);
   if(i < 0) return false;
   buf[i] = '\0';
-  strncpy(numbuf,ptr,64);
+  strncpy_s(numbuf,ptr,64);
   ptr = buf+i+1;
   data->ts = QString(numbuf).toULong();
 
   // the rest of numbers
-#define PARSE_INT(val) i = str.find(",",i+1);  \
+#define PARSE_INT(val) i = str.indexOf(",",i+1);  \
                        if(i < 0) return false; \
                        buf[i] = '\0';          \
-                       strncpy(numbuf,ptr,64); \
+                       strncpy_s(numbuf,ptr,64); \
                        ptr = buf+i+1;          \
                        val = QString(numbuf).toUShort() 
   
@@ -383,17 +390,17 @@ bool BookmarkData::ReadEntry(struct bookmark_t *data)
   
   // info
   buf[str.length()] = '\0';
-  strncpy(data->info, ptr, INFOSIZE);
+  strncpy_s(data->info, ptr, INFOSIZE);
   
   str = data->info;
 
   // replace \r with CR(13)
-  str.replace(QRegExp("\\\\r"), "\r");
+  str.replace("\\\\r", "\r");
 
   // replace \n with LF(10)
-  str.replace(QRegExp("\\\\n"), "\n");
+  str.replace("\\\\n", "\n");
 
-  strncpy(data->info, str, INFOSIZE);
+  strncpy_s(data->info, str.toUtf8(), INFOSIZE);
 
 #ifdef  DEBUG_VER_
   fprintf(stderr,"%s,"
@@ -425,10 +432,10 @@ bool BookmarkData::WriteEntry(struct bookmark_t *data)
   alias = data->alias;
 
   // strip whitespace
-  alias.simplifyWhiteSpace();
+  alias.simplified();
 
   // strip comma from alias
-  alias.replace(QRegExp(","), " ");
+  alias.replace(",", " ");
 
   ///////////////
   /// info    ///
@@ -436,12 +443,12 @@ bool BookmarkData::WriteEntry(struct bookmark_t *data)
   info = data->info;
 
   // replace CR(13) with \r
-  info.replace(QRegExp("\r"),"\\r");
+  info.replace("\r","\\r");
 
   // replace LF(10) with \n
-  info.replace(QRegExp("\n"),"\\n");
+  info.replace("\n","\\n");
 
-  buf.sprintf(
+  buf.asprintf(
 	  ","      // alias
 	  "%lu,"   // freq
 	  "%lu,"   // ts
@@ -475,7 +482,7 @@ bool BookmarkData::WriteEntry(struct bookmark_t *data)
   buf.append("\r\n");
   buf.prepend(alias);
 
-  dataFile.writeBlock(buf,buf.length());
+  dataFile.write(buf.toUtf8(),buf.length());
 
   return true;
 }
@@ -489,24 +496,26 @@ bool BookmarkData::WriteCycle()
 {
   BookmarkItem *bm;
   bookmark_t data;
-  QListViewItemIterator it ( bmList );
-
+  QListWidget it ( bmList );
+  //QListViewItemIterator it ( bmList );
+    int h=it.count();
   // iterate through all items in the list
-  for( ; it.current(); ++it){
+  //for( int i=0 ; it.item(i); ++i){
+    for (int i=0; i<h; ++i) {
+        it.item(i);
 
-     bm = (BookmarkItem *)it.current();
+        bm = (BookmarkItem *)it.currentItem();
 
-     bm->getBookmark( &data );
+        bm->getBookmark( &data );
      
-     // add number of child in case of folder
-     if(bm->isFolderBegin()){
-        data.freq = bm->childCount();
-     }
+        // add number of child in case of folder
+        if(bm->isFolderBegin()){
+            data.freq = bm->count();
+        }
 
-     WriteEntry( &data );
+        WriteEntry( &data );
 
-  }
+    }
 
   return true;
 }
-*/

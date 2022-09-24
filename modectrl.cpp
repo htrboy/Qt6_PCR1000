@@ -21,8 +21,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
-#include <qfont.h>
+
+#include <QFont>
 
 #include "modectrl.h"
 
@@ -30,7 +30,7 @@
 /////       Initializer  
 //////////////////////////////////
 ModeCtrl::ModeCtrl(QWidget *parent, const char *name)
-	: QWidget( parent, name )
+    : QWidget( parent )
 {
   // Qt 3.0 doesn't have below API
   // setFontPropagation( QWidget::AllChildren );
@@ -45,11 +45,11 @@ ModeCtrl::ModeCtrl(QWidget *parent, const char *name)
   fm  = new QPushButton( "FM"  , this );
   am  = new QPushButton( "AM"  , this );
   
-  ssb->setFocusPolicy( NoFocus );
-  cw->setFocusPolicy( NoFocus );
-  wfm->setFocusPolicy( NoFocus );
-  fm->setFocusPolicy( NoFocus );
-  am->setFocusPolicy( NoFocus );
+  ssb->setFocusPolicy( Qt::NoFocus );
+  cw->setFocusPolicy(  Qt::NoFocus );
+  wfm->setFocusPolicy( Qt::NoFocus );
+  fm->setFocusPolicy(  Qt::NoFocus );
+  am->setFocusPolicy(  Qt::NoFocus );
 
   // connect clicked event to handlers
   connect( ssb, SIGNAL(clicked()), this, SLOT(ssbClicked()) );
@@ -65,18 +65,19 @@ ModeCtrl::ModeCtrl(QWidget *parent, const char *name)
   agc = new QPushButton( "AGC",  this );
   afc = new QPushButton( "AFC",  this );
 
-  vsc->setFocusPolicy( NoFocus );
-  nb->setFocusPolicy( NoFocus );
-  att->setFocusPolicy( NoFocus );
-  agc->setFocusPolicy( NoFocus );
-  afc->setFocusPolicy( NoFocus );
+  vsc->setFocusPolicy( Qt::NoFocus );
+  nb->setFocusPolicy(  Qt::NoFocus );
+  att->setFocusPolicy( Qt::NoFocus );
+  agc->setFocusPolicy( Qt::NoFocus );
+  afc->setFocusPolicy( Qt::NoFocus );
 
   // set them to toggle-type buttons
-  att->setToggleButton( true );
-  nb->setToggleButton( true );
-  agc->setToggleButton( true );
-  vsc->setToggleButton( true );
-  afc->setToggleButton( true );
+  att->setCheckable( true );
+  //att->setToggleButton( true ); // code update
+  nb->setCheckable( true );
+  agc->setCheckable( true );
+  vsc->setCheckable( true );
+  afc->setCheckable( true );
 
   // connect toggled event to handlers
   connect( att, SIGNAL( toggled( bool )), this, SIGNAL( setATT( bool )) );
@@ -90,12 +91,12 @@ ModeCtrl::ModeCtrl(QWidget *parent, const char *name)
   scopeW = new QPushButton("+", this );
   scopeN = new QPushButton("-", this );	
 
-  scopeO->setFocusPolicy( NoFocus );
-  scopeW->setFocusPolicy( NoFocus );
-  scopeN->setFocusPolicy( NoFocus );
+  scopeO->setFocusPolicy( Qt::NoFocus );
+  scopeW->setFocusPolicy( Qt::NoFocus );
+  scopeN->setFocusPolicy( Qt::NoFocus );
 
   // set on-off scope to toggle-type button
-  scopeO->setToggleButton( true );
+  scopeO->setCheckable( true );
   
   // connected toggles and clicked event to handlers
   connect(scopeO, SIGNAL(toggled(bool)), this, SIGNAL( scopeOn(bool)));
@@ -107,12 +108,12 @@ ModeCtrl::ModeCtrl(QWidget *parent, const char *name)
   ctcssStepUp = new QPushButton( "+", this );
   ctcssStepDn = new QPushButton( "-", this );
 
-  ctcssButton->setFocusPolicy( NoFocus );
-  ctcssStepUp->setFocusPolicy( NoFocus );
-  ctcssStepDn->setFocusPolicy( NoFocus );
+  ctcssButton->setFocusPolicy( Qt::NoFocus );
+  ctcssStepUp->setFocusPolicy( Qt::NoFocus );
+  ctcssStepDn->setFocusPolicy( Qt::NoFocus );
 
   // set ctcss to toggle
-  ctcssButton->setToggleButton( true );
+  ctcssButton->setCheckable( true );
   ctcssStepUp->setAutoRepeat( true );
   ctcssStepDn->setAutoRepeat( true );
 
@@ -206,20 +207,21 @@ void ModeCtrl::cwClicked() { emit setMode( MODE_CW ); }
 void ModeCtrl::wfmClicked() { emit setMode( MODE_WFM ); }
 void ModeCtrl::amClicked() { emit setMode( MODE_AM ); }
 
-void ModeCtrl::attUpdate( bool flag ){ att->setOn( flag ); }
-void ModeCtrl::agcUpdate( bool flag ){ agc->setOn( flag ); }
-void ModeCtrl::nbUpdate( bool flag ){ nb->setOn( flag ); }
-void ModeCtrl::vscUpdate( bool flag){ vsc->setOn( flag ); }
-void ModeCtrl::afcUpdate( bool flag){ afc->setOn( flag ); }
+void ModeCtrl::attUpdate( bool flag ){ att->toggled( flag ); }
+void ModeCtrl::agcUpdate( bool flag ){ agc->toggled( flag ); }
+void ModeCtrl::nbUpdate( bool flag ){ nb->toggled( flag ); }
+void ModeCtrl::vscUpdate( bool flag){ vsc->toggled( flag ); }
+void ModeCtrl::afcUpdate( bool flag){ afc->toggled( flag ); }
+//void ModeCtrl::afcUpdate( bool flag){ afc->setOn( flag ); } // code update
 void ModeCtrl::modeUpdate( modulate_t mode)
 {
   if(mode == MODE_USB) ssb_which = SSB_USB;
   if(mode == MODE_LSB) ssb_which = SSB_LSB;
 }
-void ModeCtrl::scopeOnUpdate( bool flag){scopeO->setOn( flag );}
+void ModeCtrl::scopeOnUpdate( bool flag){scopeO->toggled( flag );}
 void ModeCtrl::ctcssUpdate( unsigned char tone)
 { 
-  ctcssButton->setOn( tone ); 
+  ctcssButton->toggled( tone );
   ctcss = tone;
 }
 void ModeCtrl::ctcssToggled( bool flag )
@@ -250,5 +252,5 @@ void ModeCtrl::ctcssToneDn()
 
   emit setCTCSS( ctcss );
 }
-*/
+
 

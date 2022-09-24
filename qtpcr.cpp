@@ -22,22 +22,22 @@
  *
  */
 
-#include <qapplication.h>
-#include <qpixmap.h>
-#include <qpalette.h>
-#include <qmessagebox.h>
+#include <QApplication>
+#include <QPixmap>
+#include <QPalette>
+#include <QMessageBox>
 
 #include "qtpcr.h"
 #include "qtpcr.xpm"
 
 QtPcr::QtPcr(QWidget *parent, const char *name)
-	: QWidget( parent, name )
+    : QWidget( parent )
 {
   ///////////////////////////////////
   // Initialize control 
   ///////////////////////////////////
   pcr 		      = new PcrProxy();
-  bmtree          = new BookmarkTree( 0 );
+ // bmtree          = new BookmarkTree( 0 );
   scanDialog      = new ScanDialog( 0 );
   barGraph        = new BarGraph( this );
   freqDisplay     = new FreqDisplay( this );
@@ -54,16 +54,20 @@ QtPcr::QtPcr(QWidget *parent, const char *name)
   scanButton      = new QPushButton( "Scan", this );
   aliasDisplay    = new AliasDisplay( this );
   infoDisplay     = new InfoDisplay( this );
-  infoEdit        = new QMultiLineEdit( this );
+  infoEdit        = new QLineEdit( this );
+  //infoEdit        = new QMultiLineEdit( this );
   power 	      = new QPushButton( "POWER", this );
-  channelDialog   = new QTabDialog( 0 );
+  channelDialog   = new QDialogButtonBox( 0 );
+  //channelDialog   = new QTabDialog( 0 );
   monitorDialog   = new MonitorDialog( 0 );
+  displayTabs     = new QTabWidget;
 
   //////////////////////////////////////
   // Initialize radio and serial port //
   //////////////////////////////////////
-  power->setToggleButton( true );
-  power->setFocusPolicy( NoFocus );
+  power->setChecked( true );
+  //power->setToggleButton( true );
+  power->setFocusPolicy( Qt::NoFocus );
 
   EnableControl( false );
   EnableDisplay( false );
@@ -261,8 +265,8 @@ QtPcr::QtPcr(QWidget *parent, const char *name)
 
   ////////// infoedit  //////////
 
-  connect( infoDisplay, SIGNAL(editingMode(bool)),
-	   this, SLOT(editingModeSlot(bool)));
+//  connect( infoDisplay, SIGNAL(editingMode(bool)),
+//	   this, SLOT(editingModeSlot(bool)));
 
   connect( pcr, SIGNAL(infoUpdate(const char *)),
 	   infoDisplay, SLOT(infoUpdate(const char *)));
@@ -271,20 +275,20 @@ QtPcr::QtPcr(QWidget *parent, const char *name)
 
   //////////// bookmark and channel button ////////
 
-  connect(channelButton, SIGNAL(toggled(bool)),
-	  this, SLOT(ChannelSlot(bool)) );
+//  connect(channelButton, SIGNAL(toggled(bool)),
+//	  this, SLOT(ChannelSlot(bool)) );
 
-  connect(bmtree, SIGNAL(gotoBookmark(struct bookmark_t *)),
-	  pcr, SLOT(gotoBookmark(struct bookmark_t *)) );
+//  connect(bmtree, SIGNAL(gotoBookmark(struct bookmark_t *)),
+//	  pcr, SLOT(gotoBookmark(struct bookmark_t *)) );
 
-  connect(bmtree, SIGNAL(getBookmark(struct bookmark_t *)),
-	  pcr,SLOT(getBookmark(struct bookmark_t *)));
+//  connect(bmtree, SIGNAL(getBookmark(struct bookmark_t *)),
+//	  pcr,SLOT(getBookmark(struct bookmark_t *)));
 
 
   //////////// scan button and dialog  ////////////
 
-  connect( scanButton, SIGNAL(toggled(bool)),
-           this, SLOT(ScanSlot( bool )));
+//  connect( scanButton, SIGNAL(toggled(bool)),
+//           this, SLOT(ScanSlot( bool )));
 
   connect( scanDialog, SIGNAL(setFreq( pcrfreq_t)),
            pcr, SLOT(setFreq( pcrfreq_t )));
@@ -313,47 +317,58 @@ QtPcr::QtPcr(QWidget *parent, const char *name)
   connect( pcr, SIGNAL(squelchOnUpdate(bool)),
            monitorDialog, SLOT(squelchOnUpdate(bool)));
 
-  connect( bmtree, SIGNAL(toMonitor(struct bookmark_t *)),
-           monitorDialog, SLOT(toMonitorSlot(struct bookmark_t *)));
+//  connect( bmtree, SIGNAL(toMonitor(struct bookmark_t *)),
+//           monitorDialog, SLOT(toMonitorSlot(struct bookmark_t *)));
 
 
   ////////// set tabdialog  //////////////
 
-  channelDialog->addTab( bmtree, "Channel");
-  channelDialog->addTab( monitorDialog, "Monitor");
-  channelDialog->setDefaultButton( QString::null );
-  channelDialog->setOkButton( QString::null );
+//  displayTabs->addTab(bmtree, "Channel");
+  displayTabs->addTab(monitorDialog, "Monitor");
+  //channelDialog->addTab( bmtree, "Channel");
+  //channelDialog->addTab( monitorDialog, "Monitor");
+  channelDialog->standardButton(channelButton);
+  //channelDialog->setDefaultButton( "" );
+  //channelDialog->setOkButton( QString::null );
 
   // set autopile button styles
-  channelButton->setToggleButton( true );
-  channelButton->setFocusPolicy( NoFocus );
+  channelButton->setCheckable(true);
+  //channelButton->setToggleButton( true );
+  channelButton->setFocusPolicy( Qt::NoFocus );
 
 
   // set scan buttons
-  scanButton->setToggleButton( true );
-  scanButton->setFocusPolicy( NoFocus );
+  scanButton->setCheckable(true);
+  //scanButton->setToggleButton( true );
+  scanButton->setFocusPolicy( Qt::NoFocus );
 
   //////////////////
   // Set skin //////
   //////////////////
 
   // background
-  setBackgroundPixmap( QPixmap((const char **)qtpcr_xpm ));
+  QPixmap   pixMap((const char **)qtpcr_xpm );
+
+  //setBackgroundPixmap( QPixmap((const char **)qtpcr_xpm ));
   resize( 600, 240 );
   channelDialog->resize( 600, 480 );
 
   // set black display background
   fltDisplay->setPalette( QPalette( Qt::green, Qt::black ) );
-  bmtree->setPalette( QPalette( QColor(0x00,0x2c,0x59), Qt::black ));  
+//  bmtree->setPalette( QPalette( QColor(0x00,0x2c,0x59), Qt::black ));
   scanDialog->setPalette( QPalette( QColor(0x00,0x2c,0x59), Qt::black));
   monitorDialog->setPalette( QPalette( QColor(0x00,0x2c,0x59), Qt::black));
   channelDialog->setPalette( QPalette( QColor(0x00,0x2c,0x59), Qt::black));
 
-  QColorGroup cg(colorGroup()); 
-  cg.setColor(QColorGroup::Text, Qt::yellow);
-  cg.setColor(QColorGroup::Base, Qt::darkGreen);
-  cg.setColor(QColorGroup::Background, Qt::darkGreen);
-  infoEdit->setPalette( QPalette(cg, cg, cg) );
+  QPalette cg;
+  //QColorGroup cg(colorGroup());
+  cg.setColor(QPalette::Text, Qt::yellow);
+  cg.setColor(QPalette::Base, Qt::darkGreen);
+  cg.setColor(QPalette::Window, Qt::darkGreen);
+  //cg.setColor(QColorGroup::Text, Qt::yellow);
+  //cg.setColor(QColorGroup::Base, Qt::darkGreen);
+  //cg.setColor(QColorGroup::Background, Qt::darkGreen);
+  infoEdit->setPalette( QPalette(cg) );
 
 
   // set layout
@@ -406,11 +421,13 @@ void QtPcr::powerOn( bool flag)
     }
 
   }else{
+    // TODO fix
     switch( QMessageBox::warning(0, "QtPCR", "Main power operation",
                                  "Cancel", "Turn off Radio" , "Exit")){
     case 0:
        disconnect(power, SIGNAL(toggled( bool )), this, SLOT(powerOn( bool )) );
-       power->setOn( true );
+       power->setChecked(true);
+       //power->setOn( true );
        connect(power, SIGNAL(toggled( bool )), this, SLOT(powerOn( bool )) );
     break;
     case 1:
@@ -442,7 +459,7 @@ void QtPcr::editingModeSlot( bool flag)
     // set focus to keyPad by default
     keyPad->setFocus();
     str = infoEdit->text();
-    pcr->setInfo( str );
+    pcr->setInfo( str.toStdString().c_str() );
   }
 }
 
@@ -524,7 +541,7 @@ QtPcr::~QtPcr()
   delete barGraph;
   delete freqDisplay;
   delete keyPad;
-  delete bmtree;
+//  delete bmtree;
   delete scanDialog;
 }
 
@@ -547,4 +564,3 @@ void QtPcr::RadioOn( bool on)
     EnableDisplay( false );
   }
 } 
-

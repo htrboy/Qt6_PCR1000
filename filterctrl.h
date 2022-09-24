@@ -24,16 +24,17 @@
 
 #ifndef FILTERCTRL_H_
 #define FILTERCTRL_H_
-/*
+
 //
 // FilterCtrl controls filter choices and IF shift
 //
 
 
-#include <qwidget.h>
-#include <qslider.h>
-#include <qpushbutton.h>
-#include <qlabel.h>
+#include <QWidget>
+#include <QSlider>
+#include <QPushButton>
+#include <QLabel>
+#include <QResizeEvent>
 
 #include "pcrproto.h"
 
@@ -74,6 +75,5 @@ private:
 
 	QSlider *ifshift;
 };
-*/
-#endif // FILTERCTRL_H_
 
+#endif // FILTERCTRL_H_

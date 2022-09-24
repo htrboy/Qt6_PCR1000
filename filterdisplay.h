@@ -24,13 +24,14 @@
 
 #ifndef FILTERDISPLAY_H_
 #define FILTERDISPLAY_H_
-/*
+
 //
 // FilterDisplay displays filter widget and TS
 //
 
 
-#include <qwidget.h>
+#include <QWidget>
+
 #include "pcrproto.h"
 
 class FilterDisplay : public QWidget
@@ -54,6 +55,5 @@ private:
  ifshift_t shift;
  unsigned char CTCSS;
 };
-*/
-#endif // FILTERDISPLAY_H_
 
+#endif // FILTERDISPLAY_H_

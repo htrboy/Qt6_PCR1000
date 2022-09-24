@@ -21,16 +21,19 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include <qpainter.h>
+#include <QMouseEvent>
 #include "dial.h"
 
 #ifdef DEBUG_VER_
 #include <stdio.h>
 #endif // DEBUG_VER_
 
+bool state;
+
 Dial::Dial(QWidget *parent, const char *name, int min, int max, int ang)
-  : QWidget(parent , name)
+  : QWidget( parent )
 {
   // set angle
   this->ang = ang;
@@ -40,9 +43,10 @@ Dial::Dial(QWidget *parent, const char *name, int min, int max, int ang)
   maskBitmap = NULL;
   
   reportValue = false;
-  setFocusPolicy(QWidget::NoFocus);
+  setFocusPolicy(Qt::NoFocus);
   
-  state = NoButton;
+  //button->isDown() = Qt::NoButton;
+  //state = NoButton;
   autoRepeatTimer.stop();
   connect( &autoRepeatTimer, SIGNAL(timeout()), 
 	   this, SLOT( ControlHandler() ));
@@ -55,20 +59,22 @@ void Dial::setRange(int min, int max, int val)
   reportValue = true;
   range.setValue(val);
   range.setRange(min, max);
-  range.setSteps( (max-min)*DIAL_STEPANGLE/(this->max-this->min), 1); 
+  range.setPageStep(( max-min )*DIAL_STEPANGLE/( this->max-this->min));
+  //range.setSteps( (max-min)*DIAL_STEPANGLE/(this->max-this->min), 1);
 }
 
 void Dial::updateValue(int val)
 {
   range.setValue(val);
-  ang = (int)((double)(val-range.minValue())*(max-min)/(range.maxValue()-range.minValue())) 
+  ang = (int)((double)(val-range.minimum())*(max-min)/(range.maximum()-range.minimum()))
+  //ang = (int)((double)(val-range.minValue())*(max-min)/(range.maxValue()-range.minValue()))
     + min;
   repaint();
 }
 
 void Dial::mouseReleaseEvent( QMouseEvent *e)
 {
-  state = NoButton;
+  state = Qt::NoButton;
   autoRepeatTimer.stop();
 }
 
@@ -76,22 +82,22 @@ void Dial::mouseReleaseEvent( QMouseEvent *e)
 
 void Dial::mousePressEvent( QMouseEvent *e)
 {
-  if(e->button() == LeftButton){
-    state = LeftButton;
+  if(e->button() == Qt::LeftButton){
+    state = Qt::LeftButton;
     ControlHandler();
-  }else	if(e->button() == RightButton){
-    state = RightButton;
+  }else	if(e->button() == Qt::RightButton){
+    state = Qt::RightButton;
     ControlHandler();
   }else
     return;
-  
-  autoRepeatTimer.start( DIAL_TIMESTEP*5, true );
+  autoRepeatTimer.start( DIAL_TIMESTEP*5 );
+  //autoRepeatTimer.start( DIAL_TIMESTEP*5, true );
 }
 
 
 void Dial::ControlHandler()
 {
-  if(state == LeftButton){
+  if(state == Qt::LeftButton){
     ang -= DIAL_STEPANGLE;
     if(min < max  &&  ang < min){
       ang += DIAL_STEPANGLE;
@@ -99,10 +105,10 @@ void Dial::ControlHandler()
     }
     emit turnLeft();
     if(reportValue){
-      range.subtractLine();
+      //range.subtractLine();
       emit setValue( range.value() );
     }
-  }else if(state == RightButton){
+  }else if(state == Qt::RightButton){
     ang += DIAL_STEPANGLE;
     if(min < max  && max < ang){
       ang -= DIAL_STEPANGLE;
@@ -110,7 +116,7 @@ void Dial::ControlHandler()
     }
     emit turnRight();
     if(reportValue){
-      range.addLine();
+      //range.addLine();
       emit setValue( range.value() );
     }
   }else
@@ -140,7 +146,7 @@ void Dial::resizeEvent( QResizeEvent *e)
   QPainter p( maskBitmap );
   
   p.setBrush( Qt::black );
-  p.setPen( NoPen );
+  p.setPen( Qt::NoPen );
   p.drawRect( 0, 0, e->size().width(), e->size().height() );
   
   p.setBrush( Qt::white );
@@ -163,4 +169,3 @@ void Dial::paintEvent( QPaintEvent *)
   p.setPen( QPen(Qt::white,1) );
   p.drawEllipse( width()/4-2, -width()/8, width()/4, width()/4);
 }
-*/

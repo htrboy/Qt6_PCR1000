@@ -24,7 +24,7 @@
 
 #ifndef MODECTRL_H_
 #define MODECTRL_H_
-/*
+
 
 /////////////////////////////////////////
 // MoceCtrl control modes of radio
@@ -34,8 +34,10 @@
 /////////////////////////////////////////
 
 
-#include <qpushbutton.h>
-#include <qwidget.h>
+#include <QPushButton>
+#include <QWidget>
+#include <QResizeEvent>
+
 #include "pcrproto.h"
 
 #define SSB_LSB true
@@ -109,7 +111,7 @@ private:
  QPushButton *ctcssStepUp;
  QPushButton *ctcssStepDn;
 };
-*/
+
 #endif // MODECTRL_H_
 
 

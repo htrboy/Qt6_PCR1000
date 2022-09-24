@@ -24,14 +24,18 @@
 
 #ifndef SCAN_DIALOG_H_
 #define SCAN_DIALOG_H_
-/*
+
 ////////////////////////////////////
 ///  Scanner Dialog             ////
 ////////////////////////////////////
-#include <qdialog.h>
-#include <qlineedit.h>
-#include <qcombobox.h>
-#include <qcanvas.h>
+#include <QDialog>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QGraphicsScene>
+#include <QGraphicsView>
+#include <QGraphicsTextItem>
+//#include <qcanvas.h>
+
 #include "scan.h"
 #include "pcrproto.h"
 
@@ -48,10 +52,12 @@
 /////////////////////////////////////
 //// Signal plot on your canvas /////
 /////////////////////////////////////
-class SignalLine : public QCanvasLine
+//class SignalLine : public QCanvasLine
+class SignalLine : public QGraphicsScene
 {
 public:
-  SignalLine( QCanvas * canvas );
+  //SignalLine( QCanvas * canvas );
+  SignalLine( QGraphicsScene * canvas );
 
   pcrfreq_t getFrequency();
   unsigned char getSig();
@@ -73,7 +79,7 @@ protected:
 class SignalMarker : public SignalLine 
 {
 public:
-  SignalMarker( QCanvas * canvas ); 
+  SignalMarker( QGraphicsScene * canvas );
   int rtti() const;
 
   void setPoints(int , int , int , int);
@@ -83,8 +89,8 @@ public:
   void setColor ( const QColor & );
  
 private:
-  QCanvasText *freqText;
-  void setFreqText(int);
+  QGraphicsTextItem *freqText;
+  void setFreqText(int x);
 };
 
 
@@ -115,11 +121,11 @@ private:
 ///////////////////////////////////////
 ////    Canvas view                ////
 ///////////////////////////////////////
-class ScanScreen : public QCanvasView
+class ScanScreen : public QGraphicsView
 {
   Q_OBJECT
 public:
-  ScanScreen( QCanvas * viewing=0, QWidget * parent=0, const char * name=0, WFlags f=0);
+  ScanScreen( QGraphicsScene * viewing=0, QWidget * parent=0, const char * name=0, QFlag f=0);
   void clear();
   QSize minimumSizeHint () const;
   QSize sizeHint () const;
@@ -192,7 +198,7 @@ private:
   QComboBox   *algorithm;
   QComboBox   *scale;
   ScanScreen  *screen; 
-  QCanvas     *canvas;
+  QGraphicsScene     *canvas;
   int         x, timeStep;
   pcrfreq_t   freq, beginFreq, endFreq, freqStep;
   SignalRuler ruler;
@@ -200,6 +206,4 @@ private:
 
   void StopScan();
 };
-
-*/
 #endif // SCAN_DIALOG_H_

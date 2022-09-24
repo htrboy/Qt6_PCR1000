@@ -21,12 +21,19 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+
 /*
+ * code updates
+ * changes to QTimer calls
+ * and QString callss
+*/
+
 #include "keypad.h"
 
+bool ok;
 
 KeyPad::KeyPad( QWidget *parent, const char *name)
-	: QWidget( parent, name )
+    : QWidget( parent )
 {
 
   button0 	= 	new QPushButton("0", this );
@@ -42,18 +49,18 @@ KeyPad::KeyPad( QWidget *parent, const char *name)
   buttonDot     = 	new QPushButton(".", this );
   buttonEnter   =	new QPushButton("E", this );
   
-  button0->setFocusPolicy( NoFocus );
-  button1->setFocusPolicy( NoFocus );
-  button2->setFocusPolicy( NoFocus );
-  button3->setFocusPolicy( NoFocus );
-  button4->setFocusPolicy( NoFocus );
-  button5->setFocusPolicy( NoFocus );
-  button6->setFocusPolicy( NoFocus );
-  button7->setFocusPolicy( NoFocus );
-  button8->setFocusPolicy( NoFocus );
-  button9->setFocusPolicy( NoFocus );
-  buttonDot->setFocusPolicy( NoFocus );
-  buttonEnter->setFocusPolicy( NoFocus );
+  button0->setFocusPolicy( Qt::NoFocus );
+  button1->setFocusPolicy( Qt::NoFocus );
+  button2->setFocusPolicy( Qt::NoFocus );
+  button3->setFocusPolicy( Qt::NoFocus );
+  button4->setFocusPolicy( Qt::NoFocus );
+  button5->setFocusPolicy( Qt::NoFocus );
+  button6->setFocusPolicy( Qt::NoFocus );
+  button7->setFocusPolicy( Qt::NoFocus );
+  button8->setFocusPolicy( Qt::NoFocus );
+  button9->setFocusPolicy( Qt::NoFocus );
+  buttonDot->setFocusPolicy( Qt::NoFocus );
+  buttonEnter->setFocusPolicy( Qt::NoFocus );
 
   connect( button0, SIGNAL(clicked()), this, SLOT(clicked0()) );
   connect( button1, SIGNAL(clicked()), this, SLOT(clicked1()) );
@@ -68,13 +75,13 @@ KeyPad::KeyPad( QWidget *parent, const char *name)
   connect( buttonDot,   SIGNAL(clicked()), this, SLOT(clickedDot()) );
   connect( buttonEnter, SIGNAL(clicked()), this, SLOT(clickedEnter()) );
   
-  tempFreq = QString::null;
+  tempFreq = "";
   tictoc   = new QTimer;
   
   connect( tictoc, SIGNAL(timeout()),
 	   this, SLOT(timeOut()) );
   
-  setFocusPolicy( StrongFocus );
+  setFocusPolicy( Qt::StrongFocus );
   setFocus();
 }
 
@@ -106,7 +113,8 @@ KeyPad::~KeyPad()
 //
 void KeyPad::keyPressEvent( QKeyEvent *e )
 {
-	switch(e->ascii()){
+    switch(e->text().toInt(&ok, 10)) {
+    //switch(e->ascii()){ // code update
 		case '\r': clickedEnter(); break;
 		case '.':  clickedDot(); break;
 		case '0':  clicked0(); break;
@@ -160,7 +168,7 @@ void KeyPad::resizeEvent( QResizeEvent *e )
 //
 void KeyPad::timeOut()
 {
-	tempFreq = QString::null;
+    tempFreq = "";
 	emit displayReset();
 }
 
@@ -172,7 +180,8 @@ void KeyPad::timeOut()
 //
 void KeyPad::clickedNumber(const char *str)
 {
-	tictoc->start( 5000, true );
+    tictoc->start( 5000 );
+    //tictoc->start( 5000, true ); // code update
 
 	if(tempFreq.length() >= 11)
 		return;
@@ -194,7 +203,7 @@ void KeyPad::clicked9(){ clickedNumber("9"); }
 
 void KeyPad::clickedDot()
 {
-	tictoc->start( 5000, true );
+    tictoc->start( 5000 );
  
 	if(tempFreq.length() >= 11)
 		return;
@@ -212,12 +221,12 @@ void KeyPad::clickedEnter()
 	int dot;
 	int npadzero;
  
-	tictoc->start( 500, true );
+    tictoc->start( 500 );
 
 	if(tempFreq.length() >= 11)
 		return;
-
-	dot = tempFreq.find(".");
+    dot = tempFreq.contains("."); // code update
+    //dot = tempFreq.find(".");
 
 	if(dot >= 0){
 		npadzero = 7-tempFreq.length()+dot;
@@ -234,8 +243,7 @@ void KeyPad::clickedEnter()
 
 	tictoc->stop();
 	timeOut();
-	tempFreq = QString::null;
+    tempFreq = "";
 
 	return;
 }
-*/

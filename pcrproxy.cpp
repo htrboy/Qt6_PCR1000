@@ -1,7 +1,7 @@
 /*
  *
  * QtPcr is a PCR-1000 controls.
- *
+ * 
  * Copyright (C) 2001
  *
  *     Teepanis Chachiyo   <teepanis@physics.purdue.edu>
@@ -9,15 +9,15 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * of the License, or (at your option) any later version.     
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU General Public License for more details.              
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * along with this program; if not, write to the Free Software   
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <QMessageBox>
 #include <QApplication>
+
 #include "pcrproxy.h"
 #include "pcrproto.h"
 #include "tips.h"
@@ -42,46 +43,50 @@ pcrfreq_t CTCSS_TONE[52] =
 #endif // DEBUG_VER_
 
 
-
 PcrProxy::PcrProxy(QObject *parent, const char *name)
-    : QObject( )
-
+  : QObject( parent )
 {
-    // connect to PcrIO to send/receive messages
 
-    connect( this, &PcrProxy::sendMessage, &pcrIO, pcrIO::write());
-    //connect( this, SIGNAL( sendMessage(const char *, int)), &pcrIO, SLOT( write(const char *, int)));
+  // connect to PcrIO to send/receive messages
+  connect( this, SIGNAL( sendMessage(const char*, int)),
+	   &pcrIO, SLOT( sendMessageSlot(const char *, int)));
+  
+  connect( &pcrIO, SIGNAL( radioMessage(const char *, int)),
+	   this,	SLOT( radioMessageSlot(const char *, int)) );
+  
+  connect( &pcrIO, SIGNAL( disconnected() ),
+	   this,	SLOT( ResetSerialPort() ) );
 
-    connect( pcrIO, SIGNAL( radioMessage(const char *, int)), this,	SLOT( radioMessageSlot(const char *, int)) );
+  // initialize radio conditions
+  pcrinfo.freq    = DEFAULT_FREQ;
+  pcrinfo.ts      = DEFAULT_TS;
+  pcrinfo.mode    = DEFAULT_MODE;
+  pcrinfo.vol     = 0;
+  pcrinfo.squelch = 0;
+  pcrinfo.filter  = DEFAULT_FILTER;
+  pcrinfo.ifShift = DEFAULT_IFSHIFT;
 
-    connect( pcrIO, SIGNAL( disconnected() ), this,	SLOT( ResetSerialPort() ) );
+  memset(pcrinfo.alias, 0, ALIASSIZE);
+  memset(pcrinfo.info, 0, INFOSIZE);
+  memset(pcrinfo.bandScope, 0, 256);
+  //bzero( pcrinfo.alias, ALIASSIZE); // deprecated
+  //bzero( pcrinfo.info, INFOSIZE); // deprecated
+  //bzero( pcrinfo.bandScope, 256 ); // deprecated
 
-    // initialize radio conditions
-    pcrinfo.freq    = DEFAULT_FREQ;
-    pcrinfo.ts      = DEFAULT_TS;
-    pcrinfo.mode    = DEFAULT_MODE;
-    pcrinfo.vol     = 0;
-    pcrinfo.squelch = 0;
-    pcrinfo.filter  = DEFAULT_FILTER;
-    pcrinfo.ifShift = DEFAULT_IFSHIFT;
+  pcrinfo.bandScopeNsamples = 0x20; 
+  pcrinfo.isBandScopeOn     = true;
+  pcrinfo.isPowerOn         = false;
 
-    memset( pcrinfo.alias, 0, ALIASSIZE);
-    bzero( pcrinfo.info, INFOSIZE);
-    bzero( pcrinfo.bandScope, 256 );
-    pcrinfo.bandScopeNsamples = 0x20;
-    pcrinfo.isBandScopeOn     = true;
-    pcrinfo.isPowerOn         = false;
-
-    pcrinfo.ATT   = false;
-    pcrinfo.AGC   = false;
-    pcrinfo.NB    = false;
-    pcrinfo.VSC   = false;
-    pcrinfo.AFC   = false;
-    pcrinfo.CTCSS = 0;
-    pcrinfo.previousCTCSS = 0;
-    srand(time(NULL));
-    strcpy( pcrinfo.info, QtPcrTips[rand()%TIPS_SIZE] );
-    strcpy( pcrinfo.device, "/dev/pcr1000" );
+  pcrinfo.ATT   = false;
+  pcrinfo.AGC   = false;
+  pcrinfo.NB    = false;
+  pcrinfo.VSC   = false;
+  pcrinfo.AFC   = false;
+  pcrinfo.CTCSS = 0;
+  pcrinfo.previousCTCSS = 0;
+  srand(time(NULL));
+  //strcpy_s( pcrinfo.info, QtPcrTips[rand()%TIPS_SIZE] );
+  strcpy_s( pcrinfo.device, "/dev/pcr1000" );
 }
 
 
@@ -94,90 +99,95 @@ PcrProxy::~PcrProxy()
 
 bool PcrProxy::InitRadio(const char *device)
 {
-    time_t t;
+  time_t t;
 
-    // open serial device
-    if(!pcrIO.Open(device, B9600))
-        if(!pcrIO.Open(device, B38400))
-            return false;
+  // open serial device
+  if(!pcrIO.Open(device, QSerialPort::Baud9600))
+  if(!pcrIO.Open(device, QSerialPort::Baud38400))
+    return false; 
 
-    // wait one second for radio sync in
-    for(t = time(NULL); t+1 > time(NULL) ; );
+  // wait one second for radio sync in
+  //for(t = time(NULL); t+1 > time(NULL) ; );
+  QSlumber(1);
 
-    // turn radio on
-    emit sendMessage("H101\x0d\x0aG300\x0d\x0a",12);
+  // turn radio on
+  emit sendMessage("H101\x0d\x0aG300\x0d\x0a",12);
 
-    // wait 3 second for radio to initialize itself
-    for(t = time(NULL); t+3 > time(NULL) ; );
+  // wait 3 second for radio to initialize itself
+  //for(t = time(NULL); t+3 > time(NULL) ; );
+  QSlumber(3);
 
-    // set baudrate
-    emit sendMessage("G105\x0d\x0a",6);
+  // set baudrate
+  emit sendMessage("G105\x0d\x0a",6);
 
-    // wait one seconds (FreeBSD-4.3 needs this)
-    for(t = time(NULL); t+1 > time(NULL) ; );
+  // wait one seconds (FreeBSD-4.3 needs this)
+  for(t = time(NULL); t+1 > time(NULL) ; );
 
-    pcrIO.Close();
+  pcrIO.Close();
 
-    // reopen serial port with this baud rate
-    if(!pcrIO.Open(device, B38400)) return false;
+  // reopen serial port with this baud rate 
+  if(!pcrIO.Open(device, QSerialPort::Baud38400)) return false;
 
-    // wait one seconds
-    for(t = time(NULL); t+1 > time(NULL) ; );
+  // wait one seconds
+  //for(t = time(NULL); t+1 > time(NULL) ; );
+  QSlumber(1);
 
-    // set interactive mode
-    emit sendMessage("H101\x0d\x0aG300\x0d\x0a",12);
+  // set interactive mode
+  emit sendMessage("H101\x0d\x0aG300\x0d\x0a",12);
 
-    // wait one second
-    for(t = time(NULL); t+1 > time(NULL) ; );
+  // wait one second
+  //for(t = time(NULL); t+1 > time(NULL) ; );
+  QSlumber(1);
+ 
+  // ask power stat
+  emit sendMessage("H1?\x0d\x0a",5);
 
-    // ask power stat
-    emit sendMessage("H1?\x0d\x0a",5);
+  // wait one seconds
+  //for(t = time(NULL); t+1 > time(NULL) ; );
+  QSlumber(1);
+ 
+  // autoupdate mode  
+  emit sendMessage("H101\x0d\x0aG301\x0d\x0a",12);
 
-    // wait one seconds
-    for(t = time(NULL); t+1 > time(NULL) ; );
+  // init radio state
+  setFreq(pcrinfo.freq);
+  setVol(pcrinfo.vol);
+  setSquelch(pcrinfo.squelch);
+  setIFShift(pcrinfo.ifShift);
+  setATT(pcrinfo.ATT);
+  setAGC(pcrinfo.AGC);
+  setNB(pcrinfo.NB);
+  setVSC(pcrinfo.VSC);
+  setAFC(pcrinfo.AFC);
+  setCTCSS(pcrinfo.CTCSS);
+  setAlias(pcrinfo.alias);
+  //setInfo(pcrinfo.info);
+  setTS( pcrinfo.ts );
 
-    // autoupdate mode
-    emit sendMessage("H101\x0d\x0aG301\x0d\x0a",12);
-
-    // init radio state
-    setFreq(pcrinfo.freq);
-    setVol(pcrinfo.vol);
-    setSquelch(pcrinfo.squelch);
-    setIFShift(pcrinfo.ifShift);
-    setATT(pcrinfo.ATT);
-    setAGC(pcrinfo.AGC);
-    setNB(pcrinfo.NB);
-    setVSC(pcrinfo.VSC);
-    setAFC(pcrinfo.AFC);
-    setCTCSS(pcrinfo.CTCSS);
-    setAlias(pcrinfo.alias);
-    setInfo(pcrinfo.info);
-    setTS( pcrinfo.ts );
-
-    strncpy(pcrinfo.device, device, 64);
-
-    return true;
+  strncpy_s(pcrinfo.device, device, 64);
+  
+  return true;
 }
 
 
 
 
 void PcrProxy::ResetSerialPort(){
-    // kill all pending signal
-    blockSignals( true );
+  // kill all pending signal
+  blockSignals( true );
 
-    disconnect( &pcrIO, SIGNAL( disconnected() ),
-                this,    SLOT( ResetSerialPort() ) );
-
-    if(pcrIO.Close())
-        pcrIO.Open(pcrinfo.device, B38400);
-
-    connect( &pcrIO, SIGNAL( disconnected() ),
+  disconnect( &pcrIO, SIGNAL( disconnected() ),
              this,    SLOT( ResetSerialPort() ) );
 
-    blockSignals( false );
+  if(pcrIO.Close())
+    pcrIO.Open(pcrinfo.device, QSerialPort::Baud38400);
 
-    emit sendMessage("G301\x0d\x0a",6);
+  connect( &pcrIO, SIGNAL( disconnected() ),
+             this,    SLOT( ResetSerialPort() ) );
+
+  blockSignals( false );
+
+  emit sendMessage("G301\x0d\x0a",6);
 }
 
 
@@ -188,86 +198,90 @@ void PcrProxy::ResetSerialPort(){
 //
 bool PcrProxy::TurnOffRadio()
 {
-    // send radio off command
-    emit sendMessage("H100\x0d\x0a",6);
+  // send radio off command
+  emit sendMessage("H100\x0d\x0a",6);
 
-    // wait one second
-    for(time_t t = time(NULL); t+2 > time(NULL) ; );
+  // wait one second
+  //for(time_t t = time(NULL); t+2 > time(NULL) ; );
+    QSlumber(1);
 
-    // ask if radio is off
-    emit sendMessage("H1?\x0d\x0a",5);
+  // ask if radio is off
+  emit sendMessage("H1?\x0d\x0a",5);
+  
+  // wait one second
+  //for(time_t t = time(NULL); t+2 > time(NULL) ; );
+    QSlumber(1);
 
-    // wait one second
-    for(time_t t = time(NULL); t+2 > time(NULL) ; );
+  pcrIO.Close();
 
-    pcrIO.Close();
-
-    return true;
+  return true;
 }
 
 
-//
+/*
 // freqParse parses freqency, mode, and filter into valid radio
 // command string
 // Sometimes the filter value does not valid for a given mode,
 // it automatically reset filter to a valid value and send 
 // filterUpdate signal
-//
+*/
 bool PcrProxy::freqParse(pcrfreq_t freq, modulate_t mode, filter_t filter, char *str, int *len)
 {
-    // check filter
-    switch( mode ){
-    case MODE_NFM: filter = clipped(FILTER_6kHz, filter, FILTER_50kHz); break;
-    case MODE_WFM: filter = clipped(FILTER_50kHz, filter, FILTER_230kHz); break;
-    case MODE_AM : filter = clipped(FILTER_3kHz, filter, FILTER_50kHz); break;
-    case MODE_USB: case MODE_LSB: case MODE_CW:
-        filter = clipped(FILTER_3kHz, filter, FILTER_6kHz);
-        break;
-    }
-
-    pcrinfo.filter = filter;
-
-    sprintf(str, "K0%.10lu%.2X%.2X00\x0d\x0a", freq, mode, filter);
-    *len = strlen(str);
-
+  // check filter
+  switch( mode ){
+  case MODE_NFM: filter = clipped(FILTER_6kHz, filter, FILTER_50kHz); break;
+  case MODE_WFM: filter = clipped(FILTER_50kHz, filter, FILTER_230kHz); break;
+  case MODE_AM : filter = clipped(FILTER_3kHz, filter, FILTER_50kHz); break;
+  case MODE_USB: case MODE_LSB: case MODE_CW:
+    filter = clipped(FILTER_3kHz, filter, FILTER_6kHz);
+    break;			
+  }
+  
+  pcrinfo.filter = filter;
+  
+  sprintf(str, "K0%.10lu%.2X%.2X00\x0d\x0a", freq, mode, filter);
+  *len = strlen(str);
+  
 #ifdef DEBUG_VER_
-    fprintf(stderr, "PcrProxy::freqParse : %s\n", str);
+  fprintf(stderr, "PcrProxy::freqParse : %s\n", str);
 #endif // DEBUG_VER_
-
-    return true;
+  
+  return true;
 }
 
 
 
 bool PcrProxy::setFreq(pcrfreq_t freq)
 {
-    int len;
+  int len;
 
-
-    // check valid freqency range
-    if((FREQ_MIN < freq) && (freq < FREQ_MAX)){
+  
+  // check valid freqency range
+  if((FREQ_MIN < freq) && (freq < FREQ_MAX)){
 
 #ifdef SMART_RESETINFO
-        // absolute vale
-        if((freq>pcrinfo.freq?freq-pcrinfo.freq:pcrinfo.freq-freq)
-                > (pcrfreq_t)4*FILTER_TO_HERTZ((pcrinfo.filter))){
-            bzero(pcrinfo.alias, ALIASSIZE);
-            bzero(pcrinfo.info, INFOSIZE);
-            emit aliasUpdate( pcrinfo.alias );
-            emit infoUpdate( pcrinfo.info );
-        }
+    // absolute vale
+    if((freq>pcrinfo.freq?freq-pcrinfo.freq:pcrinfo.freq-freq) 
+        > (pcrfreq_t)4*FILTER_TO_HERTZ((pcrinfo.filter))){
+        memset(pcrinfo.alias, 0, ALIASSIZE);
+        memset(pcrinfo.info, 0, INFOSIZE);
+      //bzero(pcrinfo.alias, ALIASSIZE); // deprecated
+      //bzero(pcrinfo.info, INFOSIZE); // deprecated
+      emit aliasUpdate( pcrinfo.alias );
+      //emit infoUpdate( pcrinfo.info );
+    }
 #endif    
 
-        pcrinfo.freq = freq;
-        freqParse(pcrinfo.freq, pcrinfo.mode, pcrinfo.filter, buffer, &len);
-        emit sendMessage(buffer, len);
-        emit freqUpdate( freq );
+    pcrinfo.freq = freq;
+    freqParse(pcrinfo.freq, pcrinfo.mode, pcrinfo.filter, buffer, &len);
+    emit sendMessage(buffer, len); 	
+    emit freqUpdate( freq );
 
-        return true;
+    return true;
 
-    }else
-        return false;
-
+  }else
+    return false;
+	
 }
 
 
@@ -275,14 +289,14 @@ bool PcrProxy::setFreq(pcrfreq_t freq)
 
 bool PcrProxy::setMode(modulate_t mode)
 {
-    int len;
-
-    pcrinfo.mode = mode;
-    freqParse(pcrinfo.freq, pcrinfo.mode, pcrinfo.filter, buffer, &len);
-    emit sendMessage(buffer, len);
-    emit filterUpdate( pcrinfo.filter );
-    emit modeUpdate( pcrinfo.mode );
-    return true;
+  int len;
+	
+  pcrinfo.mode = mode;
+  freqParse(pcrinfo.freq, pcrinfo.mode, pcrinfo.filter, buffer, &len);
+  emit sendMessage(buffer, len);
+  emit filterUpdate( pcrinfo.filter );
+  emit modeUpdate( pcrinfo.mode );
+  return true;
 }
 
 
@@ -290,26 +304,26 @@ bool PcrProxy::setMode(modulate_t mode)
 
 bool PcrProxy::stepUpFilter()
 {
-    switch( pcrinfo.filter ){
-    case FILTER_3kHz : return setFilter( FILTER_6kHz   ); break;
-    case FILTER_6kHz : return setFilter( FILTER_15kHz  ); break;
-    case FILTER_15kHz: return setFilter( FILTER_50kHz  ); break;
-    case FILTER_50kHz: return setFilter( FILTER_230kHz ); break;
-    }
-    return true;
+  switch( pcrinfo.filter ){
+  case FILTER_3kHz : return setFilter( FILTER_6kHz   ); break;
+  case FILTER_6kHz : return setFilter( FILTER_15kHz  ); break;
+  case FILTER_15kHz: return setFilter( FILTER_50kHz  ); break;
+  case FILTER_50kHz: return setFilter( FILTER_230kHz ); break;
+  }
+  return true;
 }
 
 
 
 bool PcrProxy::stepDownFilter()
 {
-    switch( pcrinfo.filter ){
-    case FILTER_230kHz: return setFilter( FILTER_50kHz  ); break;
-    case FILTER_50kHz : return setFilter( FILTER_15kHz  ); break;
-    case FILTER_15kHz : return setFilter( FILTER_6kHz   ); break;
-    case FILTER_6kHz  : return setFilter( FILTER_3kHz   ); break;
-    }
-    return true;
+  switch( pcrinfo.filter ){
+  case FILTER_230kHz: return setFilter( FILTER_50kHz  ); break;
+  case FILTER_50kHz : return setFilter( FILTER_15kHz  ); break;
+  case FILTER_15kHz : return setFilter( FILTER_6kHz   ); break;
+  case FILTER_6kHz  : return setFilter( FILTER_3kHz   ); break;
+  }
+  return true;
 }
 
 
@@ -317,216 +331,216 @@ bool PcrProxy::stepDownFilter()
 
 bool PcrProxy::setFilter(filter_t filter)
 {
-    int len;
+  int len;
 
 #ifdef DEBUG_VER_
-    fprintf(stderr, "PcrProxy::setFilter %d\n", (int)filter);
+  fprintf(stderr, "PcrProxy::setFilter %d\n", (int)filter);
 #endif // DEBUG_VER_
 
-    pcrinfo.filter = filter;
-    freqParse(pcrinfo.freq, pcrinfo.mode, pcrinfo.filter, buffer, &len);
-    emit sendMessage(buffer, len);
-    emit filterUpdate( pcrinfo.filter );
-    return true;
+  pcrinfo.filter = filter;
+  freqParse(pcrinfo.freq, pcrinfo.mode, pcrinfo.filter, buffer, &len);
+  emit sendMessage(buffer, len);
+  emit filterUpdate( pcrinfo.filter );
+  return true;
 }
 
 
 bool PcrProxy::setIFShift(ifshift_t shift)
 {
-    pcrinfo.ifShift = shift;
-    sprintf(buffer, "J43%.2X\x0d\x0a", shift);
-    emit sendMessage(buffer, 7);
-    emit ifShiftUpdate( shift );
+  pcrinfo.ifShift = shift;
+  sprintf(buffer, "J43%.2X\x0d\x0a", shift);
+  emit sendMessage(buffer, 7);
+  emit ifShiftUpdate( shift );
 #ifdef DEBUG_VER_
-    fprintf(stderr, "PcrProxy::setIFShift : %s\n", buffer);
+  fprintf(stderr, "PcrProxy::setIFShift : %s\n", buffer);
 #endif // DEBUG_VER_
-    return true;
+  return true;
 }
 
 
 bool PcrProxy::setVol(vol_t vol)
 {
-    sprintf(buffer, "J40%.2X\x0d\x0a", vol);
+  sprintf(buffer, "J40%.2X\x0d\x0a", vol);
 
-    pcrinfo.vol = vol;
+  pcrinfo.vol = vol;
 
-    emit sendMessage(buffer, 7);
-    emit volUpdate( vol );
+  emit sendMessage(buffer, 7);
+  emit volUpdate( vol );
 #ifdef DEBUG_VER_
-    fprintf(stderr, "PcrProxy::setVol : %s\n", buffer);
+  fprintf(stderr, "PcrProxy::setVol : %s\n", buffer);
 #endif // DEBUG_VER_
-    return true;
+  return true;
 }
 
 
 
 bool PcrProxy::setATT( bool val )
 {
-    if( val )
-        sprintf(buffer, "J4701\x0d\x0a");
-    else
-        sprintf(buffer, "J4700\x0d\x0a");
-    emit sendMessage(buffer, 7);
-    emit attUpdate( val );
+  if( val )
+    sprintf(buffer, "J4701\x0d\x0a");
+  else
+    sprintf(buffer, "J4700\x0d\x0a");
+  emit sendMessage(buffer, 7);
+  emit attUpdate( val );
 
-    pcrinfo.ATT = val;
+  pcrinfo.ATT = val;
 #ifdef DEBUG_VER_
-    fprintf(stderr, "PcrProxy::setATT : %s\n", buffer);
+  fprintf(stderr, "PcrProxy::setATT : %s\n", buffer);
 #endif // DEBUG_VER_
 
-    return true;
+  return true;
 }
 
 
 bool PcrProxy::setVSC( bool val )
 {
-    if( val )
-        sprintf(buffer, "J5001\x0d\x0a");
-    else
-        sprintf(buffer, "J5000\x0d\x0a");
-    emit sendMessage(buffer, 7);
-    emit vscUpdate( val );
+  if( val )
+    sprintf(buffer, "J5001\x0d\x0a");
+  else
+    sprintf(buffer, "J5000\x0d\x0a");
+  emit sendMessage(buffer, 7);
+  emit vscUpdate( val );
 
-    pcrinfo.VSC = val;
+  pcrinfo.VSC = val;
 #ifdef DEBUG_VER_
-    fprintf(stderr, "PcrProxy::setVSC : %s\n", buffer);
+  fprintf(stderr, "PcrProxy::setVSC : %s\n", buffer);
 #endif // DEBUG_VER_
-    return true;
+  return true;
 }
 
 
 bool PcrProxy::setAGC( bool val )
 {
-    if( val )
-        sprintf(buffer, "J4501\x0d\x0a");
-    else
-        sprintf(buffer, "J4500\x0d\x0a");
-    emit sendMessage(buffer, 7);
-    emit agcUpdate( val );
+  if( val )
+    sprintf(buffer, "J4501\x0d\x0a");
+  else
+    sprintf(buffer, "J4500\x0d\x0a");
+  emit sendMessage(buffer, 7);
+  emit agcUpdate( val );
 
-    pcrinfo.AGC = val;
+  pcrinfo.AGC = val;
 #ifdef DEBUG_VER_
-    fprintf(stderr, "PcrProxy::setAGC : %s\n", buffer);
+  fprintf(stderr, "PcrProxy::setAGC : %s\n", buffer);
 #endif // DEBUG_VER_
 
-    return true;
+  return true;
 }
 
 
 bool PcrProxy::setAFC( bool val )
 {
-    pcrinfo.AFC = val;
-    emit afcUpdate( val );
+  pcrinfo.AFC = val;
+  emit afcUpdate( val );
 
-    return true;
+  return true;
 }
 
 
 bool PcrProxy::setNB( bool val )
 {
-    if( val )
-        sprintf(buffer, "J4601\x0d\x0a");
-    else
-        sprintf(buffer, "J4600\x0d\x0a");
-    emit sendMessage(buffer, 7);
-    emit nbUpdate( val );
+  if( val )
+    sprintf(buffer, "J4601\x0d\x0a");
+  else
+    sprintf(buffer, "J4600\x0d\x0a");
+  emit sendMessage(buffer, 7);
+  emit nbUpdate( val );
 
-    pcrinfo.NB = val;
+  pcrinfo.NB = val;
 #ifdef DEBUG_VER_
-    fprintf(stderr, "PcrProxy::setNB : %s\n", buffer);
+  fprintf(stderr, "PcrProxy::setNB : %s\n", buffer);
 #endif // DEBUG_VER_
 
-    return true;
+  return true;
 }
 
 
 
 bool PcrProxy::setSquelch( squelch_t squ )
 {
-    sprintf(buffer, "J41%.2X\x0d\x0a", squ);
-    emit sendMessage(buffer, 7);
-    emit squelUpdate( squ );
+  sprintf(buffer, "J41%.2X\x0d\x0a", squ);
+  emit sendMessage(buffer, 7);
+  emit squelUpdate( squ );
 
-    pcrinfo.squelch = squ;
+  pcrinfo.squelch = squ;
 #ifdef DEBUG_VER_
-    fprintf(stderr, "PcrProxy::setSquelch : %s\n", buffer);
+  fprintf(stderr, "PcrProxy::setSquelch : %s\n", buffer);
 #endif // DEBUG_VER_
 
-    return true;
+  return true;
 }
 
 
 // sending tone = 0xFF reset to previous CTCSS
 bool PcrProxy::setCTCSS( unsigned char tone )
 {
-    // check range
-    if( tone > 0x33 ){
+  // check range
+  if( tone > 0x33 ){
 
-        if(pcrinfo.previousCTCSS)
-            tone = pcrinfo.previousCTCSS;
-        else
-            tone = 0x01;
-    }
-    pcrinfo.previousCTCSS = pcrinfo.CTCSS;
-    pcrinfo.CTCSS = tone;
+    if(pcrinfo.previousCTCSS)
+      tone = pcrinfo.previousCTCSS;
+    else
+      tone = 0x01;
+  }
+  pcrinfo.previousCTCSS = pcrinfo.CTCSS;
+  pcrinfo.CTCSS = tone;
 
-    sprintf(buffer, "J51%.2X\x0d\x0a", tone);
-    emit sendMessage(buffer, 7);
-    emit ctcssUpdate( tone );
+  sprintf(buffer, "J51%.2X\x0d\x0a", tone);
+  emit sendMessage(buffer, 7);
+  emit ctcssUpdate( tone );
 
-    pcrinfo.CTCSS = tone;
+  pcrinfo.CTCSS = tone;
 #ifdef DEBUG_VER_
-    fprintf(stderr, "PcrProxy::setCTCSS : %s\n", buffer);
+  fprintf(stderr, "PcrProxy::setCTCSS : %s\n", buffer);
 #endif // DEBUG_VER_
 
-    return true;
+  return true;
 }
 
 
 
 bool PcrProxy::setTS( pcrfreq_t ts )
 {
-    pcrinfo.ts = ts;
+  pcrinfo.ts = ts;
 
-    if(pcrinfo.isBandScopeOn){
-        scopeOn( true );
-    }
+  if(pcrinfo.isBandScopeOn){
+    scopeOn( true );
+  }
 
-    emit tsUpdate( ts );
+  emit tsUpdate( ts );
 
-    return true;
+  return true;
 }
 
 
 bool PcrProxy::stepUpTS()
 {
-    // KISS (Keep It Simple and Stupid) algorithm
-    switch( pcrinfo.ts ){
-    // Dave, VK5DG, added low freqency steps
-    case TS_10Hz   : setTS( TS_25Hz ); break;
-    case TS_25Hz   : setTS( TS_50Hz ); break;
-    case TS_50Hz   : setTS( TS_100Hz ); break;
-    case TS_100Hz  : setTS( TS_250Hz ); break;
-    case TS_250Hz  : setTS( TS_500Hz ); break;
-    case TS_500Hz  : setTS( TS_1000Hz ); break;
-    case TS_1000Hz : setTS( TS_2500Hz ); break;
-    case TS_2500Hz : setTS( TS_3000Hz ); break;
-    case TS_3000Hz : setTS( TS_5000Hz ); break;
-    case TS_5000Hz : setTS( TS_9000Hz ); break;
-    case TS_9000Hz : setTS( TS_10000Hz ); break;
-    case TS_10000Hz: setTS( TS_12500Hz ); break;
-    case TS_12500Hz: setTS( TS_25000Hz ); break;
-    }
+  // KISS (Keep It Simple and Stupid) algorithm
+  switch( pcrinfo.ts ){
+    // Dave, VK5DG, added low freqency steps 
+  case TS_10Hz   : setTS( TS_25Hz ); break;
+  case TS_25Hz   : setTS( TS_50Hz ); break;
+  case TS_50Hz   : setTS( TS_100Hz ); break;
+  case TS_100Hz  : setTS( TS_250Hz ); break;
+  case TS_250Hz  : setTS( TS_500Hz ); break;
+  case TS_500Hz  : setTS( TS_1000Hz ); break;
+  case TS_1000Hz : setTS( TS_2500Hz ); break;
+  case TS_2500Hz : setTS( TS_3000Hz ); break;
+  case TS_3000Hz : setTS( TS_5000Hz ); break;
+  case TS_5000Hz : setTS( TS_9000Hz ); break;
+  case TS_9000Hz : setTS( TS_10000Hz ); break;
+  case TS_10000Hz: setTS( TS_12500Hz ); break;
+  case TS_12500Hz: setTS( TS_25000Hz ); break;
+  }
 
-    return true;
+  return true;
 }
 
 
 bool PcrProxy::stepDownTS()
 {
-    // KISS (Keep It Simple and Stupid) algorithm
+  // KISS (Keep It Simple and Stupid) algorithm
     switch( pcrinfo.ts ){
-    // Dave, VK5DG, added low freqency steps
+      // Dave, VK5DG, added low freqency steps
     case TS_25000Hz: setTS( TS_12500Hz ); break;
     case TS_12500Hz: setTS( TS_10000Hz ); break;
     case TS_10000Hz: setTS( TS_9000Hz ); break;
@@ -542,19 +556,19 @@ bool PcrProxy::stepDownTS()
     case TS_25Hz   : setTS( TS_10Hz ); break;
     }
 
-    return true;
+  return true;
 }
 
 bool PcrProxy::stepUpFreq()
 {
-    pcrfreq_t newFreq;
+  pcrfreq_t newFreq;
 
-    newFreq = pcrinfo.freq + pcrinfo.ts;
-    if(setFreq( newFreq )){
-        pcrinfo.freq = newFreq;
-        return true;
-    }else
-        return false;
+  newFreq = pcrinfo.freq + pcrinfo.ts;
+  if(setFreq( newFreq )){
+    pcrinfo.freq = newFreq;
+    return true;
+  }else
+    return false;
 }
 
 
@@ -562,28 +576,28 @@ bool PcrProxy::stepUpFreq()
 
 bool PcrProxy::stepDownFreq()
 {
-    pcrfreq_t newFreq;
+  pcrfreq_t newFreq;
 
-    newFreq = pcrinfo.freq - pcrinfo.ts;
-    if(setFreq( newFreq )){
-        pcrinfo.freq = newFreq;
-        return true;
-    }else
-        return false;
+  newFreq = pcrinfo.freq - pcrinfo.ts;
+  if(setFreq( newFreq )){
+    pcrinfo.freq = newFreq;
+    return true;
+  }else
+    return false;
 }
 
 
 
 bool PcrProxy::stepFreq(int step)
 {
-    pcrfreq_t newFreq;
+  pcrfreq_t newFreq;
 
-    newFreq = pcrinfo.freq + step*pcrinfo.ts;
-    if(setFreq( newFreq )){
-        pcrinfo.freq = newFreq;
-        return true;
-    }else
-        return false;
+  newFreq = pcrinfo.freq + step*pcrinfo.ts;
+  if(setFreq( newFreq )){
+    pcrinfo.freq = newFreq;
+    return true;
+  }else
+    return false;
 }	
 
 
@@ -594,12 +608,12 @@ bool PcrProxy::stepFreq(int step)
 //
 unsigned char PcrProxy::charHexToDec(char digit)
 {
-    if(('A' <= digit) && (digit <= 'F'))
-        return digit-'A'+10;
-    else if(('1' <= digit) && (digit <= '9'))
-        return digit-'1'+1;
-    else
-        return 0;
+  if(('A' <= digit) && (digit <= 'F'))
+    return digit-'A'+10;
+  else if(('1' <= digit) && (digit <= '9'))
+    return digit-'1'+1;
+  else
+    return 0;
 }
 
 
@@ -609,235 +623,236 @@ unsigned char PcrProxy::charHexToDec(char digit)
 //
 void PcrProxy::radioMessageSlot(const char *mesg, int len)
 {
-    int index;
-    int i;
-    char digit;
-    char buffer[PCRIO_BUFFERSIZE];
-    unsigned char val;
+  int index;
+  int i;
+  char digit;
+  char buffer[PCRIO_BUFFERSIZE];
+  unsigned char val;
 
-    bzero( buffer, PCRIO_BUFFERSIZE );
-    memcpy( buffer, mesg, len );
+  memset( buffer, 0, PCRIO_BUFFERSIZE);
+  //bzero( buffer, PCRIO_BUFFERSIZE ); // deprecated
+  memcpy( buffer, mesg, len );
 
-    // on off status
-    if(buffer[0] == 'H'){
-        switch(buffer[3]){
-        case '1':
-            pcrinfo.isPowerOn = true;
-            emit onUpdate( true );
-            break;
+  // on off status
+  if(buffer[0] == 'H'){
+    switch(buffer[3]){
+    case '1':
+       pcrinfo.isPowerOn = true;
+       emit onUpdate( true );
+    break;
 
-        case '0':
-            pcrinfo.isPowerOn = false;
-            emit onUpdate( false);
-            break;
-        }
+    case '0': 
+       pcrinfo.isPowerOn = false;
+       emit onUpdate( false);
+    break;
+    } 
+  }
+
+  // bandscope
+  if(buffer[0] == 'N'){
+
+    digit = buffer[3];
+    index = (int)charHexToDec(digit)*16;
+
+    for(i = 0; i < 16; i++){
+
+      digit = buffer[i*2 + 5];
+      val = charHexToDec(digit)*16;
+      digit = buffer[i*2 + 6];
+      val += charHexToDec(digit);
+      pcrinfo.bandScope[index+i] = val;
     }
 
-    // bandscope
-    if(buffer[0] == 'N'){
+    emit bandScopeUpdate(pcrinfo.bandScope, pcrinfo.bandScopeNsamples);
+  }
 
-        digit = buffer[3];
-        index = (int)charHexToDec(digit)*16;
+  // normal inquires 
+  if(buffer[0] == 'I'){
+    switch(buffer[1]){
 
-        for(i = 0; i < 16; i++){
+      // squelch ON/ OFF
+    case '0':
+      digit = buffer[3];
+      if(digit == '4')
+	emit squelchOnUpdate( false );
+      else 
+	emit squelchOnUpdate( true );
+      break;
 
-            digit = buffer[i*2 + 5];
-            val = charHexToDec(digit)*16;
-            digit = buffer[i*2 + 6];
-            val += charHexToDec(digit);
-            pcrinfo.bandScope[index+i] = val;
-        }
+      // sig strength
+    case '1':
+      digit = buffer[2];
+      val = charHexToDec(digit)*16;	
+      digit = buffer[3];
+      val += charHexToDec(digit);
+      pcrinfo.sigStrength = val;
 
-        emit bandScopeUpdate(pcrinfo.bandScope, pcrinfo.bandScopeNsamples);
+      emit sigStrengthUpdate( val );
+      break;
+
+      // AFC center 
+    case '2':
+      digit = buffer[2];
+      val = charHexToDec(digit)*16;
+      digit = buffer[3];
+      val += charHexToDec(digit);
+      
+      pcrinfo.sigCenter = val;
+      emit sigCenterUpdate( val );
+
+      // control frequency
+      if(pcrinfo.AFC){
+	switch( val ){
+	case AFC_LOW: stepDownFreq(); break;
+	case AFC_HIGH: stepUpFreq(); break;
+	}
+      }
+      break;
     }
-
-    // normal inquires
-    if(buffer[0] == 'I'){
-        switch(buffer[1]){
-
-        // squelch ON/ OFF
-        case '0':
-            digit = buffer[3];
-            if(digit == '4')
-                emit squelchOnUpdate( false );
-            else
-                emit squelchOnUpdate( true );
-            break;
-
-            // sig strength
-        case '1':
-            digit = buffer[2];
-            val = charHexToDec(digit)*16;
-            digit = buffer[3];
-            val += charHexToDec(digit);
-            pcrinfo.sigStrength = val;
-
-            emit sigStrengthUpdate( val );
-            break;
-
-            // AFC center
-        case '2':
-            digit = buffer[2];
-            val = charHexToDec(digit)*16;
-            digit = buffer[3];
-            val += charHexToDec(digit);
-
-            pcrinfo.sigCenter = val;
-            emit sigCenterUpdate( val );
-
-            // control frequency
-            if(pcrinfo.AFC){
-                switch( val ){
-                case AFC_LOW: stepDownFreq(); break;
-                case AFC_HIGH: stepUpFreq(); break;
-                }
-            }
-            break;
-        }
-    }
+  }
 }
 
 
 bool PcrProxy::scopeOn( bool flag)
 {
-    unsigned char rate;
-    unsigned char nsamples;
+  unsigned char rate;
+  unsigned char nsamples;
 
-    if(flag){
+  if(flag){
 
-        nsamples = pcrinfo.bandScopeNsamples;
-        rate = 0x05;
+    nsamples = pcrinfo.bandScopeNsamples;
+    rate = 0x05;
+    
+    // parse band scope command
+    sprintf(buffer, "ME00001%.2X%.2X0100%.6lu\x0d\x0a", 
+	    nsamples, 
+	    rate,  
+	    pcrinfo.ts );
+    
+    emit sendMessage( buffer, 23);
+    emit scopeOnUpdate( true );
 
-        // parse band scope command
-        sprintf(buffer, "ME00001%.2X%.2X0100%.6lu\x0d\x0a",
-                nsamples,
-                rate,
-                pcrinfo.ts );
-
-        emit sendMessage( buffer, 23);
-        emit scopeOnUpdate( true );
-
-        pcrinfo.isBandScopeOn = true;
-
+    pcrinfo.isBandScopeOn = true;
+    
 #ifdef DEBUG_VER_
-        fprintf( stderr, "PcrProxy::scopeOn - emit %s \n", buffer );
+    fprintf( stderr, "PcrProxy::scopeOn - emit %s \n", buffer );
 #endif	// DEBUG_VER_
-    }else{
+  }else{
 
-        sprintf( buffer, "ME0000114050000010000\x0d\x0a" );
-        emit sendMessage( buffer , 23);
-        emit scopeOnUpdate( false );
+    sprintf( buffer, "ME0000114050000010000\x0d\x0a" );
+    emit sendMessage( buffer , 23);
+    emit scopeOnUpdate( false );
 
-        pcrinfo.isBandScopeOn = false;
+    pcrinfo.isBandScopeOn = false;
 #ifdef DEBUG_VER_
-        fprintf( stderr, "PcrProxy::scopeOn - emit %s \n", buffer );
+    fprintf( stderr, "PcrProxy::scopeOn - emit %s \n", buffer );
 #endif  // DEBUG_VER_
+    
+  }
 
-    }
-
-    return true;
+  return true;
 }
 
 bool PcrProxy::scopeWide()
 {
-    if(pcrinfo.isBandScopeOn && (int)pcrinfo.bandScopeNsamples*2 < 255){
-        pcrinfo.bandScopeNsamples  = pcrinfo.bandScopeNsamples*2;
-        scopeOn( true );
-    }
+  if(pcrinfo.isBandScopeOn && (int)pcrinfo.bandScopeNsamples*2 < 255){
+    pcrinfo.bandScopeNsamples  = pcrinfo.bandScopeNsamples*2;	
+    scopeOn( true );
+  }
 
-    return true;
+  return true;
 }
 
 
 bool PcrProxy::scopeNarrow()
 {
-    if(pcrinfo.isBandScopeOn && (int)pcrinfo.bandScopeNsamples/2 > 8){
-        pcrinfo.bandScopeNsamples  = pcrinfo.bandScopeNsamples/2;
-        scopeOn( true );
-    }
+  if(pcrinfo.isBandScopeOn && (int)pcrinfo.bandScopeNsamples/2 > 8){
+    pcrinfo.bandScopeNsamples  = pcrinfo.bandScopeNsamples/2;
+    scopeOn( true );
+  }
 
-    return true;
+  return true;
 }
 
 
 bool PcrProxy::setAlias( const char * str )
 {
-    strncpy(pcrinfo.alias, str, ALIASSIZE);
-    emit aliasUpdate( pcrinfo.alias );
+  strncpy_s(pcrinfo.alias, str, ALIASSIZE);
+  emit aliasUpdate( pcrinfo.alias );
 
-    return true;
+  return true;
 }
 
 bool PcrProxy::setInfo( const char * str )
 {
-    strncpy(pcrinfo.info, str, INFOSIZE);
-    emit infoUpdate( pcrinfo.info );
+  //strncpy_s(pcrinfo.info, str, INFOSIZE);
+  //emit infoUpdate( pcrinfo.info );
 
-    return true;
+  return true;
 }
 
 bool PcrProxy::getBookmark(struct bookmark_t *bm)
 {
-    // copy mem directly to speed up, but need to
-    // be carefull every time we change bookmark_t
-    memcpy(bm, &pcrinfo, sizeof(struct bookmark_t));
+  // copy mem directly to speed up, but need to
+  // be carefull every time we change bookmark_t
+  memcpy(bm, &pcrinfo, sizeof(struct bookmark_t));
 
-    return true;
+  return true;
 }
 
 
 bool PcrProxy::gotoBookmark(struct bookmark_t *bm)
 {
-    int len;
+  int len;
 
-    // set auxilary mode first
-    if(bm->squelch != pcrinfo.squelch)
-        setSquelch(bm->squelch);
+  // set auxilary mode first
+  if(bm->squelch != pcrinfo.squelch)  
+    setSquelch(bm->squelch);
 
-    if(bm->ATT != pcrinfo.ATT)
-        setATT(bm->ATT);
+  if(bm->ATT != pcrinfo.ATT)
+    setATT(bm->ATT);
 
-    if(bm->AGC != pcrinfo.AGC)
-        setAGC(bm->AGC);
+  if(bm->AGC != pcrinfo.AGC)
+    setAGC(bm->AGC);
 
-    if(bm->NB != pcrinfo.NB)
-        setNB(bm->NB);
+  if(bm->NB != pcrinfo.NB)
+    setNB(bm->NB);
 
-    if(bm->VSC != pcrinfo.VSC)
-        setVSC(bm->VSC);
+  if(bm->VSC != pcrinfo.VSC)
+    setVSC(bm->VSC);
+ 
+  if(bm->AFC != pcrinfo.AFC)
+    setAFC(bm->AFC);
 
-    if(bm->AFC != pcrinfo.AFC)
-        setAFC(bm->AFC);
+  if(bm->CTCSS != pcrinfo.CTCSS)
+    setCTCSS(bm->CTCSS);
 
-    if(bm->CTCSS != pcrinfo.CTCSS)
-        setCTCSS(bm->CTCSS);
+  if(bm->ifshift != pcrinfo.ifShift)
+    setIFShift(bm->ifshift);
 
-    if(bm->ifshift != pcrinfo.ifShift)
-        setIFShift(bm->ifshift);
+  if(bm->ts != pcrinfo.ts)
+    setTS(bm->ts);
+  
+  // this should be hard-coded
+  pcrinfo.freq   = bm->freq;
+  pcrinfo.mode   = bm->mode;
+  pcrinfo.filter = bm->filter;
+  freqParse(pcrinfo.freq, pcrinfo.mode, pcrinfo.filter, buffer, &len);
 
-    if(bm->ts != pcrinfo.ts)
-        setTS(bm->ts);
+  emit sendMessage(buffer, len);
+  emit freqUpdate( pcrinfo.freq );
+  emit modeUpdate( pcrinfo.mode );
+  emit filterUpdate( pcrinfo.filter );
 
-    // this should be hard-coded
-    pcrinfo.freq   = bm->freq;
-    pcrinfo.mode   = bm->mode;
-    pcrinfo.filter = bm->filter;
-    freqParse(pcrinfo.freq, pcrinfo.mode, pcrinfo.filter, buffer, &len);
+  if(bm->vol != pcrinfo.vol)
+    setVol(bm->vol);
 
-    emit sendMessage(buffer, len);
-    emit freqUpdate( pcrinfo.freq );
-    emit modeUpdate( pcrinfo.mode );
-    emit filterUpdate( pcrinfo.filter );
+  if(bm->scope != pcrinfo.isBandScopeOn)
+    scopeOn( bm->scope );
+  
+  setAlias( bm->alias );
+  setInfo( bm->info );
 
-    if(bm->vol != pcrinfo.vol)
-        setVol(bm->vol);
-
-    if(bm->scope != pcrinfo.isBandScopeOn)
-        scopeOn( bm->scope );
-
-    setAlias( bm->alias );
-    setInfo( bm->info );
-
-    return true;
+  return true;
 }
 

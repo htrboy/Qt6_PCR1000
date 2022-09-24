@@ -23,206 +23,22 @@
  */
 
 #include "pcrio.h"
-#include "qcoreapplication.h"
-
-//#define DEBUG_VER_
-
-//#ifdef DEBUG_VER_
-//#include <stdio.h>
-//#endif // DEBUG_VER_
-
-extern int errno;
-
-PcrIO::PcrIO(QSerialPort *serialPort, QObject *parent) :
-    QObject(parent),
-    m_serialPort(serialPort),
-    m_standardOutput(stdout)
-{
-    connect(m_serialPort, &QSerialPort::readyRead, this, &PcrIO::handleReadyRead);
-    connect(m_serialPort, &QSerialPort::errorOccurred, this, &PcrIO::handleError);
-
-}
-
-/////////////////////////////////////////////////
-///////////  Set highPriority ///////////////////
-/////////////////////////////////////////////////
-bool PcrIO::highPriority() const{ return true; }
-
-void PcrIO::_init_() {
-
-    if (!powerState(lastMessage)) {
-        startUp = true;
-        startRadio();
-    } else {
-        stopRadio();
-    }
-
-}
-
-
-//!
-//! \brief PcrIO::handleReadyRead
-//! Serialport IO will be async
-//! not polled like original.
-//! Receives bytes from radio,
-//! checks that message is complete,
-//! and passes to PC
-//!
-void PcrIO::handleReadyRead()
-{
-    int pos, len;
-
-    m_readData = (m_serialPort->readAll());
-    displayMessage(m_readData);
-
-    // validate message length
-    if (isTokenComplete( m_readData, m_readData.length(), &pos, &len)) {
-        qDebug() << pos << len;
-        displayMessage(m_readData);
-        radioToPc(m_readData, len);
-    }
-}
-
-
-
-void PcrIO::radioToPc(QByteArray dataFromRadio, int len ) {
-    QString data = dataFromRadio.trimmed(); // remove \cr \lf
-    m_dataToPc = data.toLatin1(); // change to ASCII
-    lastMessage = m_dataToPc;
-    emit dataToPcChanged(m_dataToPc, len); // send to GUI
-}
-
-
-/*!
- * \brief PcrIO::write
- * \param _messageToRadio
- * Slot recieves bytes and transmits
- * over serial port to radio
- */
-void PcrIO::write(const char* _messageToRadio, int msg) {
-    QByteArray dataFromPc = 0x0A + _messageToRadio + 0x0A; // add \CR - linefeed not sent to radio
-    qDebug() << dataFromPc;
-    m_serialPort->write(dataFromPc);
-}
-
-
-/*!
- * \brief PcrIO::handleError
- * \param serialPortError
- * Handles error in serial comms
- * If error occurs - exits application
- * TODO - handle errors gracefully
- */
-void PcrIO::handleError(QSerialPort::SerialPortError serialPortError)
-{
-    if (serialPortError == QSerialPort::ReadError) {
-        m_standardOutput << QObject::tr("An I/O error occurred while reading "
-                                        "the data from port %1, error: %2")
-                            .arg(m_serialPort->portName(), m_serialPort->errorString() )
-                         << Qt::endl;
-        QCoreApplication::exit(1);
-    }
-}
-
-
-
-void PcrIO::displayMessage(QByteArray dataFromRadio) {
-    QString dispMessage = QString(dataFromRadio).toUtf8().trimmed();
-    m_standardOutput << dispMessage;
-    //qDebug() << dispMessage;
-}
-
-
-void PcrIO::startRadio() {
-
-}
-
-
-/*!
- * \brief SerialPortReader::isTokenComplete
- * Check to see if message from radio is complete
- * first -> first character of message
- * tokenLen -> length of message
- * \param data
- * \param len
- * \param first
- * \param tokenLen
- * \return
- */
-bool PcrIO::isTokenComplete(const char *data, int len, int* first, int* tokenLen ) {
-    int i;
-
-    for ( i = 0; i < len; i++) {
-
-            // normal inquiries
-        if ( data[i] == 'I' && ( len-i ) < 4 ) {
-            *first = i;
-            *tokenLen = 4;
-            //qDebug() << "I True";
-            return true;
-
-            // bandscope
-        } else if( data[i] == 'N' && ( len-i )>=37 ) {
-            *first = i;
-            *tokenLen = 37;
-            //qDebug() << "N True";
-            return true;
-
-            // on/off status
-         }else if( data[i] == 'H' && ( len-i )>=4 ) {
-            *first = i;
-            *tokenLen = 4;
-            //qDebug() << "H True";
-            return true;
-
-            // command validate
-         }else if( data[i] == 'G' && ( len-i )>=4 ) {
-            *first = i;
-            *tokenLen = 4;
-            //qDebug() << "G True";
-            return true;
-        }
-    }
-    qDebug() << "token false";
-    return false;
-}
-
-
-bool powerState(QString lastMsg) {
-    if ( lastMsg == "H100" ) {
-        return false;
-    } else {
-        return true;
-    }
-}
-
-
-bool PcrIO::Close()
-{
-  emit closed();
-  return true;
-}
-
-/*
+#include <QSerialPort>
+#include <QSerialPortInfo>
+#include <QTime>
 
 ////////////////////////////////////////////////
 ////  Set variable to default values   /////////
 ////////////////////////////////////////////////
-//PcrIO::PcrIO(QObject *parent, const char *name)
-//  : QObject()
-//{
-
-PcrIO::PcrIO(QSerialPort *serialPort, QObject *parent) :
-    QObject(parent),
-    m_serialPort(serialPort)
-    //m_standardOutput(stdout)
+PcrIO::PcrIO(QObject *parent, const char *name) :
+  QObject(parent)  //: QThread(parent, name)
 {
-    connect(m_serialPort, &QSerialPort::readyRead, this, &PcrIO::handleReadyRead);
-    connect(m_serialPort, &QSerialPort::errorOccurred, this, &PcrIO::handleError);
+    bytesToWrite  = 0;
+    bufferReadLen = 0;
 
+}
 
-
-//  // prevent child process from messing up with any of files
+  // prevent child process from messing up with any of files
 //  for(int i = 3; i < 10 ; i++ ){
 
 //    int ctrlbit = fcntl( i, F_GETFD, 0 );
@@ -230,67 +46,98 @@ PcrIO::PcrIO(QSerialPort *serialPort, QObject *parent) :
 
 //  }
 
-  fd = -1;
-  bytesToWrite  = 0;
-  bufferReadLen = 0;
-  timerId = startTimer( 10 );
-  //memset(bufferRead, 0, PCRIO_BUFFERSIZE);
-  //memset(bufferWrite, 0, PCRIO_BUFFERSIZE);
-  //memset(termios.oldtio, 0, sizeof(termios.oldtio));
+//  fd = -1;
 
-  //QObject::connect(serialPort, &QSerialPort::readyRead(), this, ReadWrite() );
+//
+//  timerId = startTimer( 10 );
+//  bzero(bufferRead, PCRIO_BUFFERSIZE);
+//  bzero(bufferWrite, PCRIO_BUFFERSIZE);
+//  bzero(&oldtio, sizeof(struct termios));
 
-#ifdef DEBUG_VER_
-  t = time(NULL);
-#endif // DEBUG_VER_
-}
+//#ifdef DEBUG_VER_
+//  t = time(NULL);
+//#endif // DEBUG_VER_
+//}
+
+
+QSerialPort *m_serial = new QSerialPort();
 
 
 PcrIO::~PcrIO()
 {
-  if(fd > 0)
-    Close();
+    m_mutex.lock();
+    m_quit = true;
+    m_cond.wakeOne();
+    m_mutex.unlock();
+    //wait();
+    if(fd > 0)
+      Close();
+}
+
+void PcrIO::transaction(const QString &portName, int waitTimeout, const QString &request)
+{
+    const QMutexLocker locker(&m_mutex);
+    m_portName = portName;
+    m_waitTimeout = waitTimeout;
+    m_request = request;
 }
 
 
-/////////////////////////////////////////////////
-///////////  Set highPriority ///////////////////
-/////////////////////////////////////////////////
+
+/*
+//          Set highPriority
+*/
 bool PcrIO::highPriority () const{ return true; }
 
-
-/////////////////////////////////////////////////////////
+/*
+//
 // Open serial port to PCR1000 and initialize baudrate //
 // If sucessful, it sends connected signals            //
 // Then, start timer to check every interval if there  //
 // is a data coming in from PCR1000                    //
-/////////////////////////////////////////////////////////
+*/
+
 bool PcrIO::Open(const char *device, QSerialPort::BaudRate baudrate)
 {
+    m_serial->setPortName(p.portName);
+    m_serial->setBaudRate(p.baudRate);
+    m_serial->setDataBits(p.dataBits);
+    m_serial->setParity(p.parity);
+    m_serial->setStopBits(p.stopBits);
+    m_serial->setFlowControl(p.flowControl);
+
+    if (m_serial->open(QIODevice::ReadWrite)) {
+        // TODO Set GUI Serial Port active
+
+    }
+
+
+
+
   // does not check if device is already opened
   // potential bug here ...
 
   // open serial device
-  //fd = open(device, O_RDWR |  O_NOCTTY | O_NONBLOCK );
+  fd = Open( device, baudrate );
   if(fd < 0){
     perror(device);
     return false;
   }
-
-
+/*
   // get current terminal state
-  //tcgetattr(fd, &oldtio);
-  //bzero( &tio, sizeof(struct termios));
+  //tcgetattr(fd, &op);
+
+  //bzero( &tio, sizeof(struct op));
 
   // set baudrate (adjust so that's BSD compatible)
-  serialPort->setBaudRate(baudrate);
-  serialPort->setDataBits(QSerialPort::Data8);
-  serialPort->setFlowControl(QSerialPort::NoFlowControl);
-  serialPort->setParity(QSerialPort::NoParity);
-  serialPort->setStopBits(QSerialPort::OneStop);
-
   //cfsetispeed( &tio, baudrate);
   //cfsetospeed( &tio, baudrate);
+
+//  op.oldFlowControl = p.flowControl;
+//  p.dataBits = QSerialPort::Data8;
+//  p.direction = QSerialPort::Input;
+//  p.parity = QSerialPort::NoParity;
+//  p.baudRate = QSerialPort::Baud9600;
 
   //tio.c_cflag |= CRTSCTS;      // flow control
   //tio.c_cflag |= CS8;          // 8 bits character
@@ -301,43 +148,39 @@ bool PcrIO::Open(const char *device, QSerialPort::BaudRate baudrate)
   //tio.c_oflag = 0;
 
   //tio.c_lflag &= ~ECHO;        // no echo
-  //tio.c_lflag &= ~ICANON;      // no canonical mode
+  //tio.c_lflag &= ~ICANON;      // no canonical mode - normal in Qt
 
-  //tio.c_cc[VTIME]  = 0;        // no timer check
-  //tio.c_cc[VMIN]   = 4;        // block read 4 bytes minimum
+//  tio.c_cc[VTIME]  = 0;        // no timer check
+//  tio.c_cc[VMIN]   = 4;        // block read 4 bytes minimum
 
   // set terminal attibute
-  //tcflush(fd, TCIFLUSH);
-  //tcsetattr(fd,TCSANOW,&tio);
+//  tcflush(fd, TCIFLUSH);
+//  tcsetattr(fd,TCSANOW,&tio);
 
   // set DTR and RTS on
-  //int ctrlbit = TIOCM_DTR;
-  //if(ioctl(fd,TIOCMBIS, &ctrlbit) < 0)
-  int ctrlbit = QSerialPort::PinoutSignal(QSerialPort::DataTerminalReadySignal);
-  if (ctrlbit < 0) {
-    perror("Cannot raise DTR bit");
-  }
+//  int ctrlbit = TIOCM_DTR;
+//  if(ioctl(fd,TIOCMBIS, &ctrlbit) < 0)
+//    perror("Cannot raise DTR bit");
 
-  //ctrlbit = TIOCM_RTS;
-  //if(ioctl(fd, TIOCMBIS, &ctrlbit) < 0)
-  ctrlbit   = QSerialPort::PinoutSignal(QSerialPort::RequestToSendSignal);
-  if (ctrlbit < 0) {
-    perror("Cannot rasise RTS bit");
-  }
+//  ctrlbit = TIOCM_RTS;
+//  if(ioctl(fd, TIOCMBIS, &ctrlbit) < 0)
+//    perror("Cannot rasise RTS bit");
 
   // prevent children from messsing up with our serial port 
-  //ctrlbit = fcntl( fd, F_GETFD, 0 );
-  //if(fcntl( fd, F_SETFD, FD_CLOEXEC | ctrlbit) < 0)
-    //perror("Cannot set close-exec flag on serial line");
-
+//  ctrlbit = fcntl( fd, F_GETFD, 0 );
+//  if(fcntl( fd, F_SETFD, FD_CLOEXEC | ctrlbit) < 0)
+//    perror("Cannot set close-exec flag on serial line");
+*/
+  if (m_serial->open(QIODevice::ReadWrite)) {
   emit connected();
-
+}
 
 #ifdef DEBUG_VER_
   fprintf(stderr, "PcrIO::Open - %s successful\n", device);
 #endif // DEBUG_VER_
   
   return true;
+
 }
 
 
@@ -348,9 +191,17 @@ bool PcrIO::Open(const char *device, QSerialPort::BaudRate baudrate)
 //////////////////////////////////////////
 bool PcrIO::Close()
 {
-  //// return terminal state
-  //tcflush(fd, TCIFLUSH);
-  //tcsetattr(fd,TCSANOW,&oldtio);
+    if (m_serial->isOpen()) m_serial->close();
+    emit closed();
+    return true;
+    // TODO show port closed on GUI
+
+
+
+  /*
+    // return terminal state
+  tcflush(fd, TCIFLUSH);
+  tcsetattr(fd,TCSANOW,&oldtio);
 
   if(close(fd) < 0){
     perror("could not close fd");
@@ -362,6 +213,7 @@ bool PcrIO::Close()
   emit closed();
 
   return true;
+  */
 }
 
 
@@ -372,6 +224,11 @@ bool PcrIO::Close()
 /////////////////////////////////////////////////////////
 void PcrIO::sendMessageSlot(const char *data, int len)
 {
+
+    m_serial->write(data);
+
+
+  /*
   // check file descriptor
   if(fd < 0) return;
 
@@ -384,6 +241,7 @@ void PcrIO::sendMessageSlot(const char *data, int len)
 #endif // DEBUG_VER_
 
   ReadWrite();
+  */
 }
 
 
@@ -428,6 +286,7 @@ bool PcrIO::IsTokenComplete(const char *data, int len, int *first, int *tokenlen
     }
 
   return false;
+
 }
 
 
@@ -438,6 +297,9 @@ bool PcrIO::IsTokenComplete(const char *data, int len, int *first, int *tokenlen
 ////////////////////////////////////////////////////////////////////////
 void PcrIO::timerEvent( QTimerEvent *e){
 
+
+
+    /*
 #ifdef DEBUG_VER_
   struct termios tio;
  
@@ -455,6 +317,7 @@ void PcrIO::timerEvent( QTimerEvent *e){
 
   if( fd < 0) return;
   ReadWrite();
+  */
 }
 
 
@@ -464,41 +327,46 @@ void PcrIO::timerEvent( QTimerEvent *e){
 ///////////////////////////////////
 bool PcrIO::ReadWrite()
 {
+
+
+
+
+    /*
   int n;
   int pos, len;
-  //struct timeval tv;
+  struct timeval tv;
 
-//  tv.tv_usec = 0;
-//  tv.tv_sec  = 0;
+  tv.tv_usec = 0;
+  tv.tv_sec  = 0;
 
-//  FD_ZERO(&rset);
-//  FD_ZERO(&wset);
+  FD_ZERO(&rset);
+  FD_ZERO(&wset);
   
-//  FD_SET(fd, &rset);
+  FD_SET(fd, &rset);
   
-//  if(bytesToWrite > 0)
-//	FD_SET(fd, &wset);
+  if(bytesToWrite > 0)
+	FD_SET(fd, &wset);
   
-//  // check if there is data waiting
-//  select(fd+1, &rset, &wset, NULL, &tv);
+  // check if there is data waiting
+  select(fd+1, &rset, &wset, NULL, &tv);
   
-//  if(FD_ISSET(fd, &rset)){
+  if(FD_ISSET(fd, &rset)){
 
-//	if((n = read(fd, bufferRead+bufferReadLen, PCRIO_BUFFERSIZE-bufferReadLen))<0){
-//	  if(errno != EAGAIN){
-//		perror("read error on fd");
-//        emit disconnected();
-//      }
-//	}else if(n == 0){
+	if((n = read(fd, bufferRead+bufferReadLen, PCRIO_BUFFERSIZE-bufferReadLen))<0){
+	  if(errno != EAGAIN){
+		perror("read error on fd");
+        emit disconnected();
+      }
+	}else if(n == 0){
 	  
-//	  // get disconnected somehow
-//	  emit disconnected();
-//      fprintf(stderr, "PcrIO::ReadWrite - read turns zero byte\n");
+	  // get disconnected somehow
+	  emit disconnected();
+      fprintf(stderr, "PcrIO::ReadWrite - read turns zero byte\n");
 
-//	}else{
+	}else{
 	 
-//	  // read successful
-//	  bufferReadLen += n;
+	  // read successful
+	  bufferReadLen += n;
 
 #ifdef DEBUG_VER_
         fprintf(stderr, "PcrIO::ReadWrite - read from serial port %d bytes\n", n);
@@ -506,9 +374,9 @@ bool PcrIO::ReadWrite()
 
 	  if(IsTokenComplete(bufferRead, bufferReadLen, &pos, &len)){
 		
-        // // send message
-        //bzero(mesg, PCRIO_BUFFERSIZE);
-        //memcpy(mesg, bufferRead+pos, len);
+		// send message
+		bzero(mesg, PCRIO_BUFFERSIZE);
+		memcpy(mesg, bufferRead+pos, len);
 		emit radioMessage(mesg, len);
 #ifdef DEBUG_VER_
 		fprintf(stderr, "PcrIO::ReadWrite - emit radioMessage(%s, %d)\n", mesg,len);
@@ -519,7 +387,7 @@ bool PcrIO::ReadWrite()
 	  }
 	  
 	}
-
+  }
 
     
   if(FD_ISSET(fd, &wset)){
@@ -537,7 +405,7 @@ bool PcrIO::ReadWrite()
 	  }
 	}
   }
-  
+  */
   return true;
+
 }
-*/

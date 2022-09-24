@@ -24,7 +24,7 @@
 
 #ifndef SQUCTRL_H_
 #define SQUCTRL_H_
-/*
+
 #include "dial.h"
 #include "pcrproto.h"
 
@@ -45,5 +45,6 @@ signals:
 	void setSquelch(squelch_t);
 
 };
-*/
+
 #endif // VOLCTRL_H_
+

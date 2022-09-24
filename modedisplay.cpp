@@ -21,13 +21,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include <qpainter.h>
 
 #include "modedisplay.h"
 
 ModeDisplay::ModeDisplay( QWidget *parent, const char *name)
-	: QWidget( parent, name )
+    : QWidget( parent )
 {
 	att = false;
 	agc = false;
@@ -36,7 +36,7 @@ ModeDisplay::ModeDisplay( QWidget *parent, const char *name)
 	afc = false;
 	mode = DEFAULT_MODE;
 
-	setBackgroundColor( Qt::black );
+    plt.setColor( QPalette::Window, Qt::black );
 }
 
 void ModeDisplay::paintEvent( QPaintEvent *e)
@@ -85,4 +85,3 @@ void ModeDisplay::afcUpdate( bool val) { this->afc = val; repaint(); }
 void ModeDisplay::agcUpdate( bool val) { this->agc = val; repaint(); }
 void ModeDisplay::nbUpdate(  bool val) { this->nb  = val; repaint(); }
 void ModeDisplay::modeUpdate( modulate_t mode) { this->mode = mode; repaint(); }
-*/

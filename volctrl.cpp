@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include "volctrl.h"
 
 VolCtrl::VolCtrl(QWidget *parent, const char *name) 
@@ -42,4 +42,3 @@ void VolCtrl::setValue_Vol(int vol)
 {
   emit setVol( (vol_t) vol);
 }
-*/

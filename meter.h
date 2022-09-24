@@ -24,9 +24,12 @@
 
 #ifndef METER_H_
 #define METER_H_
-/*
-#include <qwidget.h>
-#include <qrangecontrol.h>
+
+#include <QWidget>
+#include <QAbstractSlider>
+#include <QResizeEvent>
+//#include <qrangecontrol.h> // deprecated
+
 
 class Meter : public QWidget
 {
@@ -45,12 +48,12 @@ protected:
     void timerEvent ( QTimerEvent * );
 
 private:
-	QRangeControl range;
+    QAbstractSlider range;
+    //QRangeControl range;
 	int ang_init;
 	int len;
 	bool squelchOn;
     bool needUpdate;
 };
-*/
-#endif // METER_H_
 
+#endif // METER_H_

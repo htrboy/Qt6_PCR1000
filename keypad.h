@@ -24,15 +24,16 @@
 
 #ifndef KEYPAD_H_
 #define KEYPAD_H_
-/*
+
 //
 // KeyPad displays and control keypad for enter freqency
 //
 
-#include <qwidget.h>
-#include <qstring.h>
-#include <qpushbutton.h>
-#include <qtimer.h>
+#include <QWidget>
+#include <QString>
+#include <QPushButton>
+#include <QTimer>
+#include <QKeyEvent>
 
 #include "pcrproto.h"
 
@@ -89,6 +90,5 @@ private:
 	QString tempFreq;
 
 };
-*/
-#endif // KEYPAD_H_
 
+#endif // KEYPAD_H_

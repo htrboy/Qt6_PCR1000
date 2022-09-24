@@ -21,18 +21,19 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
-#include <qstring.h>
+
+#include <QString>
 
 #include "freqdisplay.h"
+#include "mainwindow.h"
 
 
 FreqDisplay::FreqDisplay(QWidget *parent, const char *name)
-	: QLCDNumber( parent, name)
+    : QLCDNumber()
 {
 	setMode( Dec );
 	setSegmentStyle( Filled );
-	setNumDigits( 13 );
+    setDigitCount( 13 );
 	setFrameStyle( 0x00 );
 	setPalette( QPalette( Qt::green, Qt::black ) );
 	
@@ -45,19 +46,18 @@ FreqDisplay::FreqDisplay(QWidget *parent, const char *name)
 
 void FreqDisplay::displayFreq(const pcrfreq_t freq)
 {
-	QString temp;
+    QString fTemp;
 	int i;
 
 	currentFreq = freq;
 
-	temp = QString::number(freq);
-	i = temp.length();
-	temp.insert(i-3,QString("."));
+    fTemp = QString::number(freq);
+    i = fTemp.length();
+    fTemp.insert(i-3,QString("."));
 
 	if(i>6)
-		temp.insert(i-6,QString("."));
+        fTemp.insert(i-6,QString("."));
 
-	display(temp);
 }
 
 
@@ -73,4 +73,3 @@ void FreqDisplay::displayTemp( const QString *str)
 {
 	display(*str);
 }
-*/

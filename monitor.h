@@ -21,31 +21,40 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
-#include <qregexp.h>
-#include <qlist.h>
-#include <qframe.h>
-#include <qtimer.h>
-#include <qlistview.h>
-#include <qdatetime.h>
-#include <qcombobox.h>
-#include <qpushbutton.h>
-#include <qfile.h>
-#include <qmultilineedit.h>
-#include <qhbox.h>
-#include <qlineedit.h>
+
+//#include <qregexp.h>
+#include <QList>
+#include <QFrame>
+#include <QTimer>
+#include <QListView>
+#include <QListWidget> // code update
+#include <QListWidgetItem> // code update
+#include <QDateTime>
+#include <QComboBox>
+#include <QPushButton>
+#include <QFile>
+#include <QTextEdit>
+//#include <QMultiLineEdit> // deprecated
+#include <QHBoxLayout>
+#include <QLineEdit> //code updates
+#include <QPalette>  //code updates
+#include <QTableWidget> //
+#include <QTreeWidget>
 
 #include "pcrproto.h"
 
+QListWidget *mlistView;
 
-class MonitorItem : public QListViewItem
+class MonitorItem : public QListWidget
 {
 public:
-  MonitorItem(QListView * parent);
+  MonitorItem(QListWidget * parent);
+
+  //QTreeWidget mlistView;
 
   // painting
-  void paintCell( QPainter *, const QColorGroup &, int, int, int);
-  void paintFocus ( QPainter *, const QColorGroup & , const QRect & );
+  void paintCell( QPainter *, const QPalette::ColorGroup &, int, int, int);
+  void paintFocus ( QPainter *, const QPalette::ColorGroup & , const QRect & );
 
   // channel info
   void getBookmark( struct bookmark_t * );
@@ -72,10 +81,10 @@ private:
   QString CmdStart;
   QString CmdOn;
   QString CmdOff; 
-  QString CmdStop;
+  QString CmdStop;  
 };
 
-///
+/*
 class MonitorFile
 {
 public:
@@ -92,7 +101,7 @@ private:
   void WriteEntry();
 };
 
-
+*/
 
 class Preset
 {
@@ -106,6 +115,7 @@ public:
  QString CmdStart() const { return start; }
  QString CmdStop()  const { return stop; }
  int ElapseTime()   const { return elapseTime; }
+ //QTreeWidget *mlistView;
 
 private:
  QString alias;
@@ -122,6 +132,8 @@ class MonitorDialog : public QFrame
 public:
   MonitorDialog( QWidget * parent=0, const char * name=0);
   ~MonitorDialog();
+
+  //QTreeWidget mlistView;
 
 signals:
   // connect these to pcrproxy
@@ -148,8 +160,8 @@ private slots:
   void DelPreset();
   void ExecuteStop();
 
-  void DoubleClickedSlot(QListViewItem *);
-  void SelectionChangedSlot(QListViewItem *);
+  void DoubleClickedSlot(QListWidgetItem *); // QListView
+  void SelectionChangedSlot(QListWidgetItem *); // QListView
   void TimeToChangeChannel();
   void RecordTimeout();
 
@@ -162,7 +174,7 @@ private:
   QTimer         timeStep;
   QTimer         elapseTimer;
   MonitorItem    *currentItem;
-  QListView      *mlistView;
+  QListWidgetItem   *mlistWidget; // QListView
   QLineEdit      *cmdStartEdit;
   QLineEdit      *cmdOnEdit;
   QLineEdit      *cmdOffEdit;
@@ -179,9 +191,8 @@ private:
   QPushButton    *saveButton;
   QPushButton    *addPresetButton;
   QPushButton    *delPresetButton;
-  QMultiLineEdit *console;
+  QLineEdit      *console;
   QComboBox      *presetCombo;
 
   void ExecuteCmd( MonitorItem::CmdType, QString );
 };
-*/

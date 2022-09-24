@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include <math.h>
 
 #include "scan.h"
@@ -156,7 +156,7 @@ void Scan::Start()
   // settle down at the starting frequency.
   // Failing to do this causes the frequency to shift
   // to the left.
-  sync.start( 500, true );
+  sync.start( 500 );
 }
 
 
@@ -210,4 +210,3 @@ void Scan::timeToStepFreq()
 
   emit setFreq( freq );
 }
-*/

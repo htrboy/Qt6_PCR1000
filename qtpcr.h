@@ -29,11 +29,12 @@
 //////////////////////////////
 // QtPcr is the main window //
 //////////////////////////////
-
-#include <qwidget.h>
-#include <qpushbutton.h>
-#include <qmultilineedit.h>
-#include <qtabdialog.h>
+#include <QWidget>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QTabWidget>
+#include <QDialog>
+#include <QDialogButtonBox>
 
 #include "pcrproxy.h"
 #include "bargraph.h"
@@ -43,7 +44,7 @@
 #include "filterdisplay.h"
 #include "filterctrl.h"
 #include "dial.h"
-#include "bmtree.h"
+//#include "bmtree.h"
 #include "volctrl.h"
 #include "squctrl.h"
 #include "modedisplay.h"
@@ -59,6 +60,7 @@ class QtPcr : public QWidget
 public:
 	QtPcr( QWidget *parent=0, const char *name=0);
 	~QtPcr();
+
 
 protected slots:
  void powerOn( bool );
@@ -89,13 +91,15 @@ private:
  VolCtrl         *vol;
  SquCtrl         *squ;
  Meter	         *meter;	
- BookmarkTree    *bmtree;
+// BookmarkTree    *bmtree;
  AliasDisplay    *aliasDisplay;
  InfoDisplay     *infoDisplay;
- QMultiLineEdit  *infoEdit;
+ QLineEdit       *infoEdit;
  ScanDialog      *scanDialog;
  MonitorDialog   *monitorDialog;
- QTabDialog      *channelDialog;
+ QDialogButtonBox*channelDialog;
+ QTabWidget      *displayTabs;
+ QDialogButtonBox*buttonBox;
 };
 
 #endif // QTPCR_H_

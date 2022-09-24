@@ -27,94 +27,27 @@
 
 //////////////////////////////////////////////////////////////////
 // PcrIO is responsible for sending and receiving messages with
-// PCR1000. Once recieve a message, it sends signal via Qt.
+// PCR1000. Once it recieves a message, it sends a signal via Qt.
 //////////////////////////////////////////////////////////////////
-
-#include <QByteArray>
-#include <QtSerialPort/QSerialPort>
-#include <QTextStream>
-#include <QDebug>
-
-#define PCRIO_BUFFERSIZE 64
-
-QT_BEGIN_NAMESPACE
-
-QT_END_NAMESPACE
-
-class PcrIO : public QObject
-{
-    Q_OBJECT
-    //Q_PROPERTY(QString msg READ msg WRITE setMsg NOTIFY msgChanged);
-
-signals:
-    void dataToPcChanged( const QString& m_dataToPc, int len );
-    void connected();
-    void closed();
-    void disconnected();
-    void radioMessage( const char *mesg, int len );
-    void messageSent();
-
-public:
-    explicit PcrIO( QSerialPort *serialPort, QObject *parent = nullptr );
-    void pcToRadio( QString messageToRadio );
-    //bool serialDeviceOpen( const char *device, QSerialPort::BaudRate baudrate );
-    bool serialDeviceClose( );
-    bool powerState( QString lastMsg );
-    bool highPriority () const;
-    bool Close();
-
-    QString m_dataToPc;
-    QString lastMessage;
-    bool startUp = false;
-
-
-    // INIT MESSAGES
-    QString onMsg    = "H101";  //power on
-    QString offMsg   = "H100";  //power off
-    QString query    = "H1?";   //radio status
-    QString diag     = "G300";  // set diagnostic mode (not fast mode)
-    QString initBaud = "G103";  // 9600
-    QString fastBaud = "G105";  // 38400
-
-public slots:
-    Q_INVOKABLE void write(const char* _messageToRadio, int msg);
-
-private slots:
-    void handleReadyRead();
-    void handleError(QSerialPort::SerialPortError error);
-
-private:
-    QSerialPort *m_serialPort = nullptr;
-    QByteArray m_readData;
-    QTextStream m_standardOutput;
-    void displayMessage(QByteArray dataFromRadio);
-    void radioToPc( QByteArray dataFromRadio, int len );
-    void _init_();
-    void startRadio();
-    void stopRadio();
-
-protected:
-    bool isTokenComplete( const char* data, int len, int* first, int* tokenLen );
-
-
-};
-
-
-/*
-//#include <unistd.h> //unix standards
+//#include <unistd.h>
 //#include <time.h>
-//#include <termios.h>  //unix io
+//#include <termios.h>
+//#include <string.h>
+//#include <fcntl.h>
 //#include <sys/time.h>
 //#include <sys/ioctl.h>
 //#include <stdio.h>
 //#include <errno.h>
-//#include <fcntl.h>
+//#include <QObject>
+//#include <QString>
 
-#include <QObject>
-#include <QtSerialPort/QSerialPort>
-#include <QDateTime>    //modernize
-#include <QString>      //  "
-#include <QFile>        //  "
+//#include <QString>
+#include <QMutex>
+#include <QThread>
+#include <QWaitCondition>
+
+#include <QtSerialPort>
+//#include <QObject>
 
 #define PCRIO_BUFFERSIZE 64
 
@@ -122,24 +55,21 @@ class PcrIO : public QObject
 {
   Q_OBJECT
 
-  QSerialPort* serialPort;
-
-  QSerialPort::BaudRate baudrate = QSerialPort::Baud9600;
-
 public:
   PcrIO( QObject *parent=0, const char *name=0 );
   ~PcrIO();
   
-  bool highPriority () const;
+  bool highPriority() const;
   bool Open( const char *device, QSerialPort::BaudRate baudrate );
   bool Close();
+
+  // new code
+  void transaction( const QString &portname, int waitTimeOut, const QString &request );
 
 public slots:
   void sendMessageSlot( const char *mesg, int len );
 
-private slots:
-    void handleReadyRead();
-    void handleError(QSerialPort::SerialPortError error);
+public:
 
 signals:
   void connected();
@@ -147,6 +77,10 @@ signals:
   void disconnected();
   void radioMessage( const char *mesg, int len );
   void messageSent();
+  // new code
+  void response(const QString &s);
+  void error(const QString &s);
+  void timeout(const QString &s);
 
 protected:
   void timerEvent( QTimerEvent * );
@@ -154,15 +88,40 @@ protected:
   bool IsTokenComplete( const char *data, int len, int *first, int *tokenlen );
 
 private:
-    QSerialPort *m_serialPort = nullptr;
-  struct termios {
-      int tio=0;
-      int oldtio=0;
-  }termios;
+  void run(); // override;
 
+  QString m_portName;
+  QString m_request;
+  int m_waitTimeout = 0;
+  QMutex m_mutex;
+  QWaitCondition m_cond;
+  bool m_quit = false;
   int    fd;
+
+  struct Settings {
+      QString portName;
+      QSerialPort::BaudRate baudRate =          QSerialPort::Baud9600;
+      QSerialPort::DataBits dataBits =          QSerialPort::Data8;
+      QSerialPort::Parity parity =              QSerialPort::NoParity;
+      QSerialPort::StopBits stopBits =          QSerialPort::OneStop;
+      QSerialPort::FlowControl flowControl =    QSerialPort::NoFlowControl;
+      QSerialPort::PinoutSignal outSignal =     QSerialPort::DataTerminalReadySignal;
+      QSerialPort::Direction direction =        QSerialPort::AllDirections;
+  } p;
+
+
   //fd_set rset, wset;
-  //struct termios tio, oldtio;
+  struct oldSettings {
+      QString oldPortName;
+      QSerialPort::BaudRate oldBaudRate;       // = QSerialPort::Baud9600;
+      QSerialPort::DataBits oldDataBits;       // = QSerialPort::Data8;
+      QSerialPort::Parity oldParity;           // = QSerialPort::NoParity;
+      QSerialPort::StopBits oldStopBits;       // = QSerialPort::OneStop;
+      QSerialPort::FlowControl oldFlowControl; // = QSerialPort::NoFlowControl;
+      QSerialPort::PinoutSignal oldOutSignal;  // = QSerialPort::DataTerminalReadySignal;
+      QSerialPort::Direction oldDirection;     // = QSerialPort::AllDirections
+  } op;
+
 
   int  timerId;
   int  bytesToWrite;
@@ -171,10 +130,9 @@ private:
   char mesg[PCRIO_BUFFERSIZE];
   int  bufferReadLen;
 
-#ifdef DEBUG_VER_
-  time_t t;
-#endif // DEBUG_VER_
+//#ifdef DEBUG_VER_
+//  time_t t;
+//#endif // DEBUG_VER_
 };
-*/
-#endif // PCRIO_H_
 
+#endif // PCRIO_H_

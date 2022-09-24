@@ -21,9 +21,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include <math.h>
-#include <qpainter.h>
+#include <QPainter>
 
 #include "meter.h"
 
@@ -32,17 +32,19 @@
 #endif // DEBUG_VER_
 
 Meter::Meter( QWidget *parent, const char *name)
-	: QWidget( parent, name )
+    : QWidget( parent )
 {
 	range.setRange( 0, 255 );
 	range.setValue( 0 );
-	range.setSteps( 1, 1 );
+    range.setSingleStep( 1 );
+    //range.setSteps( 1, 1 );
 
 	ang_init = 0;
 	len = 0;
 
-	setBackgroundColor( Qt::black );
-	setFocusPolicy( NoFocus );
+    //background( Qt::black );
+    //setBackgroundColor( Qt::black );
+    setFocusPolicy( Qt::NoFocus );
 	squelchOn = false;
 
    // update every 50 millisecond
@@ -84,13 +86,13 @@ void Meter::paintEvent( QPaintEvent *e )
 		p.setPen( Qt::gray );
 
 	p.drawText(-width()/4,-height()/2,width()/2, height()/4, 
-				QPainter::AlignHCenter, "SIGNAL");
+                Qt::AlignHCenter, "SIGNAL");
 
-	p.setBrush( NoBrush );
-	p.setPen( QPen( Qt::white, 2, QPainter::DashLine ) );
+    p.setBrush( Qt::NoBrush );
+    p.setPen( QPen( Qt::white, 2, Qt::DashLine ) );
 	p.drawEllipse( -len, -len+5, 2*len, 2*len );
 
-	ratio = (double)(range.value() - range.minValue())/(range.maxValue()-range.minValue());
+    ratio = (double)(range.value() - range.minimum())/(range.maximum()-range.minimum());
 	p.rotate( ang_init + 180 + ratio*(180 - 2*ang_init) );
 
 	p.setPen( QPen(Qt::yellow, 3) );
@@ -109,4 +111,3 @@ void Meter::resizeEvent( QResizeEvent *e )
 	fprintf( stderr, "Meter::resizeEvent - ang_init = %d\n", ang_init );
 #endif // DEBUG_VER_ 
 }
-*/

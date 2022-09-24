@@ -24,19 +24,24 @@
 
 #ifndef BMTREE_H_
 #define BMTREE_H_
-/*
+
 //////////////////////////
 ///  Channel Browser   ///
 ///  (Bookmark style   ///
 //////////////////////////
-#include <qdialog.h>
-#include <qlistview.h>
-#include <qgroupbox.h>
-#include <qlayout.h>
-#include <qmultilineedit.h>
-#include <qpushbutton.h>
-#include <qinputdialog.h>
-#include <qmessagebox.h>
+#include <QDialog>
+#include <QListView>
+#include <QTableView> // instead of QListView
+#include <QGroupBox>
+#include <QLayout>
+//#include <QMultiLineEdit> //deprecated
+#include <QTextEdit>
+#include <QPushButton>
+#include <QInputDialog>
+#include <QMessageBox>
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QHeaderView>
 
 #include "pcrproto.h"
 #include "bmdata.h"
@@ -55,8 +60,10 @@ signals:
  void toMonitor( struct bookmark_t *);
 
 private slots:
- void DoubleClickedSlot(QListViewItem *);
- void SelectionChangedSlot(QListViewItem *);
+ void DoubleClickedSlot(QListWidgetItem *);
+ void SelectionChangedSlot(QListWidgetItem *);
+ //void DoubleClickedSlot(QListViewItem *);
+ //void SelectionChangedSlot(QListViewItem *);
  void LoadBookmarkSlot();
  void SaveBookmarkSlot();
  void AddChannelSlot();
@@ -69,8 +76,10 @@ private slots:
 private:
  struct bookmark_t bm;
 
+ QHeaderView *bmHeader;
+
  BookmarkData *bmData;
- QListView    *bmList;
+ QTableView    *bmList; // QListView
  QPushButton  *addButton;
  QPushButton  *monitorButton;
  QPushButton  *scriptButton;
@@ -79,9 +88,7 @@ private:
  QPushButton  *deleteButton;
  QPushButton  *loadButton;
  QPushButton  *saveButton;
- QMultiLineEdit *info;
+ QTextEdit    *info;
+ //QMultiLineEdit *info;
 };
-
-*/
 #endif // BMTREE_H_
-

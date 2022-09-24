@@ -21,15 +21,22 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+
 /*
-#include <qpainter.h>
-#include <qpen.h>
+ * code updates
+ * added QPainterPath for lines at 129 - 133
+ * update QPainter function calls
+*/
+
+#include <QPainterPath>
+#include <QPainter>
+#include <QPen>
 
 #include "filterdisplay.h"
 
 
 FilterDisplay::FilterDisplay(QWidget *parent, const char *name)
-  : QWidget( parent, name )
+  : QWidget( parent )
 {
   filter = DEFAULT_FILTER;
   ts = DEFAULT_TS;
@@ -66,16 +73,18 @@ void FilterDisplay::setCTCSS( unsigned char CTCSS)
 
 void FilterDisplay::paintEvent( QPaintEvent * )
 {
+  QPainterPath l;
   QPainter p( this );
   int w;
   int offset;
 
   // draw CTCSS status
-  QColor color = p.backgroundColor();
+
+  QColor color = Qt::darkGreen;
   p.setPen( QPen(Qt::yellow) );
-  p.setBackgroundColor( Qt::darkGreen );
-  BGMode bmode = p.backgroundMode();
-  p.setBackgroundMode( QPainter::OpaqueMode );
+  p.setBackground( Qt::darkGreen );
+  Qt::BGMode bmode = p.backgroundMode();
+  p.setBackgroundMode( Qt::OpaqueMode );
   if( CTCSS ){
     QString str;
     str.setNum(CTCSS_TONE[CTCSS]);
@@ -84,7 +93,7 @@ void FilterDisplay::paintEvent( QPaintEvent * )
     p.drawText( 0, 12, str);
   }
   p.setBackgroundMode ( bmode );
-  p.setBackgroundColor( color );
+  p.setBackground( color );
 
   
   // KISS (Keep It Simple and Stupid) algorithm
@@ -111,17 +120,18 @@ void FilterDisplay::paintEvent( QPaintEvent * )
   p.translate( width()/2+40, height() );
   w = width()-80;
   
-  p.setPen( QPen(Qt::green, 2, QPen::DotLine ));
+  p.setPen( QPen(Qt::green, 2, Qt::DotLine ));
   p.drawLine( 0, 0, 0, 15-height());
   
   p.setPen( QPen(Qt::green, 2) );
   p.drawLine( -w/2, 0, w/2, 0);
  
   offset = (int)((shift-127)*(filter+2)*w/3584.0);
-  p.moveTo( clipped(-w/2,-(filter+2)*w/14+offset,w/2), 0 );
-  p.lineTo( clipped(-w/2,-(filter+1)*w/14+offset,w/2), 15-height());
-  p.lineTo( clipped(-w/2, (filter+1)*w/14+offset,w/2), 15-height());
-  p.lineTo( clipped(-w/2, (filter+2)*w/14+offset,w/2), 0);
+  l.moveTo( clipped(-w/2,-(filter+2)*w/14+offset,w/2), 0 );
+  l.lineTo( clipped(-w/2,-(filter+1)*w/14+offset,w/2), 15-height());
+  //p.lineTo( clipped(-w/2,-(filter+1)*w/14+offset,w/2), 15-height());
+  l.lineTo( clipped(-w/2, (filter+1)*w/14+offset,w/2), 15-height());
+  l.lineTo( clipped(-w/2, (filter+2)*w/14+offset,w/2), 0);
 
   p.setPen( QPen( Qt::green, 0 ));
   
@@ -148,4 +158,14 @@ void FilterDisplay::paintEvent( QPaintEvent * )
   }
   
 }
-*/
+
+
+
+
+
+
+
+
+
+
+

@@ -21,21 +21,22 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
 #include <sys/types.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <stdlib.h>
-#include <qtooltip.h>
-#include <qfiledialog.h>
-#include <qinputdialog.h>
-#include <qgroupbox.h>
-#include <qlabel.h>
-#include <qlayout.h>
-#include <qpushbutton.h>
-#include <qmessagebox.h>
-#include <qpainter.h>
+//#include <qtooltip.h>
+#include <QFileDialog>
+#include <QInputDialog>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLayout>
+#include <QPushButton>
+#include <QMessageBox>
+#include <QMouseEvent>
+#include <QPainter>
 #include <stdio.h>
 #include <math.h>
+
 #include "scandialog.h"
 
 #define CANVAS_HEIGHT 310
@@ -49,8 +50,8 @@
 ////////////////////////
 /// constructor      ///
 ////////////////////////
-SignalLine::SignalLine( QCanvas * canvas )
-  : QCanvasLine( canvas )
+SignalLine::SignalLine( QGraphicsScene * canvas )
+  : QGraphicsScene( )
 {
   freq = DEFAULT_FREQ;
   sig  = 0;
@@ -89,9 +90,9 @@ void SignalLine::setSig( unsigned char sig){ this->sig = sig; }
 ////////////////////////////
 /// constructor           //
 ////////////////////////////
-SignalMarker::SignalMarker( QCanvas * canvas ) : SignalLine( canvas )
+SignalMarker::SignalMarker( QGraphicsScene * canvas ) : SignalLine( canvas )
 {
-   freqText = new QCanvasText( canvas );                   
+   freqText = new QGraphicsTextItem( );      // (canvas)
 }
 
 
@@ -114,17 +115,19 @@ void SignalMarker::setFreqText(int x)
 
   // adjust units
   if( freq >= 1000000000)
-      str.sprintf("%6.3fGHz",freq/1000000000.0);
+      str.asprintf("%6.3fGHz",freq/1000000000.0);
   else if( freq >= 1000000)
-     str.sprintf("%6.3fMHz",freq/1000000.0);
+     str.asprintf("%6.3fMHz",freq/1000000.0);
   else
-     str.sprintf("%6.3fkHz",freq/1000.0);
+     str.asprintf("%6.3fkHz",freq/1000.0);
 
-  freqText->setText(str);
-  rect = freqText->boundingRect();
+
+  //freqText->setText(str);
+  freqText->boundingRect();
+  //rect = freqText->boundingRect();
   freqText->setX( x - rect.width()/2 );
   freqText->setY( CANVAS_ZEROAXIS-260-rect.height() );
-  freqText->setZ(10);
+  freqText->setZValue(10);
 }
 
 
@@ -134,8 +137,11 @@ void SignalMarker::setFreqText(int x)
 //////////////////////////////////////////////
 void SignalMarker::setFrequency( pcrfreq_t freq)
 {
+  bool ok;
   SignalLine::setFrequency( freq );
-  setFreqText( startPoint().x() );
+  int x = freqText->toPlainText().toInt(&ok, 10);
+  setFreqText(x);
+  //setFreqText( startPoint().x() );
 }
 
 
@@ -144,7 +150,8 @@ void SignalMarker::setFrequency( pcrfreq_t freq)
 ///////////////////////////////////////////////
 void SignalMarker::setPoints( int xa, int ya, int xb, int yb )
 {
-  SignalLine::setPoints( xa, ya, xb, yb );
+    setPoints(xa, ya, xb, yb);
+  //SignalLine::setPoints( xa, ya, xb, yb );
   setFreqText( xa );
 }
 
@@ -155,7 +162,8 @@ void SignalMarker::setPoints( int xa, int ya, int xb, int yb )
 void SignalMarker::show()
 {
   freqText->show();
-  SignalLine::show();
+  show();
+  //SignalLine::show();
 }
 
 
@@ -166,7 +174,7 @@ void SignalMarker::setFont ( const QFont & f)
 { freqText->setFont( f ); }
 
 void SignalMarker::setColor ( const QColor & c)
-{ freqText->setColor( c );}
+{ return; } //freqText->setColor( c );}
 
 
 
@@ -256,7 +264,7 @@ void SignalRuler::reset()
 //////////////////////////////////////////////////////////////////////
 //////////////// CLASS ScanScreen                             ////////
 //////////////////////////////////////////////////////////////////////
-ScanScreen::ScanScreen( QCanvas * viewing, QWidget * parent, const char * name, WFlags f)
+ScanScreen::ScanScreen( QGraphicsScene * viewing, QWidget * parent, const char * name, QFlags f)
   : QCanvasView( viewing, parent, name, f)
 {
     markmode = false;
@@ -361,7 +369,7 @@ void ScanScreen::contentsMousePressEvent ( QMouseEvent * e )
 //// constructor         ///
 ////////////////////////////
 ScanDialog::ScanDialog( QWidget * parent, const char * name )
-  : QDialog( parent, name )
+  : QDialog( parent )
 {
   QGroupBox *GBoxPtr;
   QGridLayout *MainGrid;
@@ -388,12 +396,12 @@ ScanDialog::ScanDialog( QWidget * parent, const char * name )
   lock->setToggleButton(true);
   pause->setToggleButton(true);
 
-  alarm->setFocusPolicy( NoFocus );
-  loop->setFocusPolicy( NoFocus );
-  mark->setFocusPolicy( NoFocus );
-  lock->setFocusPolicy( NoFocus );
-  load->setFocusPolicy( NoFocus );
-  save->setFocusPolicy( NoFocus );
+  alarm->setFocusPolicy( Qt::NoFocus );
+  loop->setFocusPolicy( Qt::NoFocus );
+  mark->setFocusPolicy( Qt::NoFocus );
+  lock->setFocusPolicy( Qt::NoFocus );
+  load->setFocusPolicy( Qt::NoFocus );
+  save->setFocusPolicy( Qt::NoFocus );
 
   connect( alarm, SIGNAL(clicked()),
            this, SLOT(AlarmSlot()));
@@ -420,9 +428,9 @@ ScanDialog::ScanDialog( QWidget * parent, const char * name )
   stop->setEnabled( false );
   pause->setEnabled( false );
 
-  stop->setFocusPolicy( NoFocus );
-  start->setFocusPolicy( NoFocus );
-  pause->setFocusPolicy( NoFocus );
+  stop->setFocusPolicy(  Qt::NoFocus );
+  start->setFocusPolicy( Qt::NoFocus );
+  pause->setFocusPolicy( Qt::NoFocus );
 
   // create Canvas
   canvas = new QCanvas(600, CANVAS_HEIGHT);
@@ -430,7 +438,7 @@ ScanDialog::ScanDialog( QWidget * parent, const char * name )
   screen = new ScanScreen( canvas, this );
 
   MainGrid->addWidget( screen, 0, 0);
-  MainGrid->setColStretch( 0, 10 );
+  MainGrid->setColumnStretch( 0, 10 );
   MainGrid->setRowStretch( 1, 10 );
   MainGrid->addWidget( GBoxPtr, 0, 1);  
 
@@ -460,14 +468,14 @@ ScanDialog::ScanDialog( QWidget * parent, const char * name )
   new QLabel("Algorithm", GBoxPtr);
   algorithm = new QComboBox( GBoxPtr);
 
-  algorithm->setFocusPolicy( NoFocus );
+  algorithm->setFocusPolicy( Qt::NoFocus );
   algorithm->insertItem("Fix Step");
   algorithm->insertItem("Driven");
 
   new QLabel("Scale", GBoxPtr );
   scale = new QComboBox( GBoxPtr);
 
-  scale->setFocusPolicy( NoFocus ); 
+  scale->setFocusPolicy( Qt::NoFocus );
   scale->insertItem( "Linear" );
   scale->insertItem( "Log");
 
@@ -496,14 +504,23 @@ ScanDialog::ScanDialog( QWidget * parent, const char * name )
   logScale = false;
 
   // add tool tips
-  QToolTip::add(start,"Start scanning");
-  QToolTip::add(stop,"Stop scanning");
-  QToolTip::add(pause,"Pause scanning");
-  QToolTip::add(loop,"Scan in loop");
-  QToolTip::add(lock,"Lock radio control");
-  QToolTip::add(mark,"Set frequency marker");
-  QToolTip::add(load,"Load bitmap file");
-  QToolTip::add(save,"Save screen in PNG format");
+  start->setToolTip("Start scanning");
+  stop->setToolTip("Stop scanning");
+  pause->setToolTip("Pause scanning");
+  loop->setToolTip("Scan in loop");
+  lock->setToolTip("Lock radio control");
+  mark->setToolTip("Set frequency marker");
+  load->setToolTip("Load bitmap file");
+  save->setToolTip("Save screen in PNG format");
+
+  //QToolTip::add(start,"Start scanning");
+  //QToolTip::add(stop,"Stop scanning");
+  //QToolTip::add(pause,"Pause scanning");
+  //QToolTip::add(loop,"Scan in loop");
+  //QToolTip::add(lock,"Lock radio control");
+  //QToolTip::add(mark,"Set frequency marker");
+  //QToolTip::add(load,"Load bitmap file");
+  //QToolTip::add(save,"Save screen in PNG format");
 
   // set enable
   pause->setEnabled( false );
@@ -557,10 +574,12 @@ void ScanDialog::executeCmd( QString cmd )
    char *argv[128];
    int  n=0;
 
-   bzero(buf, 1024);
-   bzero(argv, 128*sizeof(char *));
+   memset(buf, 0, 1024);
+   memset(argv, 0, 1024);
+   //bzero(buf, 1024);
+   //bzero(argv, 128*sizeof(char *));
    cmd.truncate( 1023 );
-   strncpy( buf, (const char *)cmd, 1023 );
+   strncpy_s( buf, (const char *)cmd, 1023 );
 
    // argv parser
    ch = buf;
@@ -876,4 +895,3 @@ void ScanDialog::scanUpdate( pcrfreq_t freq, unsigned char sig)
   
   canvas->update();
 }
-*/

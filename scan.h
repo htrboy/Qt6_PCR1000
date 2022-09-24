@@ -24,14 +24,15 @@
 
 #ifndef _SCAN_H_
 #define _SCAN_H_
-/*
+
 /////////////////////////////////////
 ///////  Send command to control  ///
 ///////  how frequency changes    ///
 ///////  in time                  ///
 /////////////////////////////////////
-#include <qobject.h>
-#include <qtimer.h>
+#include <QObject>
+#include <QTimer>
+
 #include "pcrproto.h"
 
 class Scan : public QObject
@@ -78,6 +79,5 @@ private:
  QTimer sync;
  Algorithm algorithm;
 };
-*/
-#endif // _SCAN_H_
 
+#endif // _SCAN_H_

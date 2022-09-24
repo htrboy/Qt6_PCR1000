@@ -24,12 +24,13 @@
 
 #ifndef FREQDISPLAY_H_
 #define FREQDISPLAY_H_
-/*
-//
-// FreqDisplay displays freqency ( hint the name )
-//
 
-#include <qlcdnumber.h>
+/*
+// FreqDisplay displays freqency ( hint the name )
+*/
+
+#include <QLCDNumber>
+
 #include "pcrproto.h"
 
 class FreqDisplay : public QLCDNumber
@@ -47,6 +48,5 @@ public slots:
 private:
 	pcrfreq_t currentFreq;
 };
-*/
-#endif // FREQDISPLAY_H_
 
+#endif // FREQDISPLAY_H_

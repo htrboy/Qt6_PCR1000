@@ -25,8 +25,6 @@
 #ifndef PCRPROTO_H_
 #define PCRPROTO_H_
 
-#include <QtGlobal>
-
 // features
 #define SMART_RESETINFO 1
 
@@ -128,7 +126,4 @@ struct bmfilehdr_t{
 
 #define BMFILE_SIGNATURE "HI BABY!"
 #define BMFILE_VERSION QTPCR_VERSION
-
-
 #endif // PCRPROTO_H_
-

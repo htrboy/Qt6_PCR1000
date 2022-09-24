@@ -24,7 +24,7 @@
 
 #ifndef VOLCTRL_H_
 #define VOLCTRL_H_
-/*
+
 #include "dial.h"
 #include "pcrproto.h"
 
@@ -46,5 +46,5 @@ signals:
 
 };
 
-*/
 #endif // VOLCTRL_H_
+

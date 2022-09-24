@@ -21,36 +21,45 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #ifndef _BMDATA_H
 #define _BMDATA_H
 
 ////////////////////////////////////////
 ///////   Process channel database  ////
 ////////////////////////////////////////
-#include <qfile.h>
-#include <qfiledialog.h>
-#include <qlistview.h>
-#include <qregexp.h>
+#include <QFile>
+#include <QFileDialog>
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QRegularExpression>
+
+//#include <qfile.h>
+//#include <qfiledialog.h>
+//#include <qlistview.h>
+//#include <qregexp.h>
+
 #include "pcrproto.h"
 
 ////////////////////////////////////////
 ////  Process individual channel ///////
 ////////////////////////////////////////
-class BookmarkItem : public QListViewItem
+class BookmarkItem : public QListWidget
 {
 public:
-  BookmarkItem( QListView * parent );
-  BookmarkItem( QListView * parent, BookmarkItem *after);
-  BookmarkItem( QListViewItem *parent );
-  BookmarkItem( QListViewItem *parent, BookmarkItem *after);
+  //BookmarkItem( QListView * parent );
+  //BookmarkItem( QListView * parent, BookmarkItem *after);
+  BookmarkItem( QListWidget *parent );
+  BookmarkItem( QListWidget *parent, QListWidgetItem *after);
 
   bool isFolderBegin();
   void setIsFolderBegin( bool );
   void setBookmark( struct bookmark_t *, bool);
   void getBookmark( struct bookmark_t *);
-  void paintCell( QPainter *, const QColorGroup &, int, int, int); 
-  void paintFocus ( QPainter *, const QColorGroup & , const QRect & );
+  void paintCell( QPainter *, const QPalette &, int, int, int);
+  void paintFocus ( QPainter *, const QPalette & , const QRect & );
+  //void paintCell( QPainter *, const QColorGroup &, int, int, int);
+  //void paintFocus ( QPainter *, const QColorGroup & , const QRect & );
   QString key ( int, bool ) const;
 
 private:
@@ -63,9 +72,9 @@ private:
 
 
 
-//////////////////////////////////////
-////////  Process entire database ////
-//////////////////////////////////////
+/*
+//      Process entire database
+*/
 class BookmarkData
 {
 public:
@@ -85,4 +94,3 @@ private:
 
 #endif // _BMDATA_H
 
-*/

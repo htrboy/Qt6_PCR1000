@@ -21,21 +21,16 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-#ifndef ALIASDISPLAY_H
-#define ALIASDISPLAY_H
 
-//#include <QScrollView>
-#include <QAbstractScrollArea>
-#include <QScrollBar>
+#include <QScrollArea>
 #include <QTimer>
 #include <QLineEdit>
 #include <QLabel>
-//#include <QFocusData>
-#include <QWidget>
 #include <QPalette>
+//#include <qfocusdata.h> // obsolete
+//#include <qscrollview.h> // obsolete
 
 #include "pcrproto.h"
-
 
 class InfoLabel : public QLabel
 {
@@ -51,7 +46,7 @@ protected:
 };
 
 
-class InfoDisplay  : public QWidget
+class InfoDisplay  : public QScrollArea
 {
   Q_OBJECT
 public:
@@ -78,7 +73,6 @@ private:
  InfoLabel *infoLine;
  QString info;
  QTimer *tictoc;
- QAbstractScrollArea *sb;
 };
 
 class AliasDisplay : public QLineEdit
@@ -102,7 +96,5 @@ private slots:
 private:
   char alias[ALIASSIZE];
 };
-
-#endif
 
 

@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include "squctrl.h"
 
 SquCtrl::SquCtrl(QWidget *parent, const char *name) 
@@ -42,4 +42,3 @@ void SquCtrl::setValue_Squ(int squ)
 {
   emit setSquelch( (squelch_t) squ);
 }
-*/

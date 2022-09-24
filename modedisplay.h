@@ -24,8 +24,9 @@
 
 #ifndef MODEDISPLAY_H_
 #define MODEDISPLAY_H_
-/*
-#include <qwidget.h>
+
+#include <QWidget>
+#include <QPalette>
 
 #include "pcrproto.h"
 
@@ -35,6 +36,7 @@ class ModeDisplay : public QWidget
     
 public:
   ModeDisplay( QWidget *parent=0, const char *name=0);
+  QPalette plt = QPalette();
   
 public slots:
   void modeUpdate( modulate_t );
@@ -57,6 +59,6 @@ private:
   modulate_t mode;
   
 };
-*/
+
 #endif // MODEDISPLAY_H_
 
