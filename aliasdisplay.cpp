@@ -1,7 +1,7 @@
 /*
  *
  * QtPcr is a PCR-1000 controls.
- * 
+ *
  * Copyright (C) 2001
  *
  *     Teepanis Chachiyo  <teepanis@physics.purdue.edu>
@@ -9,184 +9,192 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.     
+ * of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.              
+ * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software   
+ * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include "aliasdisplay.h"
 #include <stdio.h>
 
 InfoLabel::InfoLabel(QWidget * parent, const char * name)
-  : QLabel( parent, name ){}
+    : QLabel( ){}
 
 void InfoLabel::mouseReleaseEvent ( QMouseEvent * e)
 {
-  emit mouseReleased(); 
+    emit mouseReleased();
 }
 
 InfoDisplay::InfoDisplay(QWidget * parent, const char * name)
-  : QScrollView( parent, name)
+    : QWidget( )
 {
-  QColorGroup cg(colorGroup());
-  
-  cg.setColor(QColorGroup::Foreground, Qt::cyan);
-  cg.setColor(QColorGroup::Dark, Qt::black);
-  cg.setColor(QColorGroup::Background, Qt::black);
+    //QColorGroup cg(colorGroup());
 
-  setPalette( QPalette(cg, cg, cg) );
+    QPalette cg;
 
-  info = QString::null;
-  
-  infoLine = new InfoLabel( viewport() );
-  tictoc = new QTimer;
-  speed = 50;
-  editing = false;
-  
-  setFrameStyle( NoFrame );
-  infoLine->setFrameStyle( NoFrame );
-  infoLine->setPalette( QPalette(cg, cg, cg) );
-  setHScrollBarMode( AlwaysOff );
-  setVScrollBarMode( AlwaysOff );
-  addChild(infoLine);
-  connect( tictoc, SIGNAL(timeout()),
-	   this, SLOT(timeToScroll()) );
 
-  connect( infoLine, SIGNAL(mouseReleased()),
-	   this, SLOT(infoMouseReleasedSlot()) );
+    cg.setColor(QPalette::WindowText, Qt::cyan);
+    cg.setColor(QPalette::Dark, Qt::black);
+    cg.setColor(QPalette::Window, Qt::black);
 
-  infoUpdate("");
+    //setPalette( QPalette(cg, cg, cg) );
+
+
+    info = "";
+
+    infoLine = new InfoLabel( sb->viewport() );
+    tictoc = new QTimer;
+    speed = 50;
+    editing = false;
+
+    //setFrameStyle( InfoLabel::NoFrame );
+    infoLine->setFrameStyle( InfoLabel::NoFrame );
+    infoLine->setPalette( cg );
+    sb->setHorizontalScrollBarPolicy( Qt::ScrollBarAlwaysOff );
+    sb->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff );
+    sb->setViewport(infoLine);
+    connect( tictoc, SIGNAL(timeout()),
+             this, SLOT(timeToScroll()) );
+
+    connect( infoLine, SIGNAL(mouseReleased()),
+             this, SLOT(infoMouseReleasedSlot()) );
+
+    infoUpdate("");
 }
 
 QString InfoDisplay::text()
 { return info; }
 
 void InfoDisplay::infoUpdate(const char *str){
-  QString temp;
-  QColorGroup cg(colorGroup());
+    QString temp;
 
-  info = str;
-  if(info.isEmpty()){
-    tictoc->stop();
-  }
+    //QColorGroup cg(colorGroup());
+    //QPalette cg;
 
-  tictoc->start( speed );
-  temp = info.simplifyWhiteSpace();
-  temp.prepend("                                       ");
-  temp.append ("                                       ");
+    info = str;
+    if(info.isEmpty()){
+        tictoc->stop();
+    }
 
-  infoLine->setText(temp);
+    tictoc->start( speed );
+    //temp = info.simplifyWhiteSpace();
+    temp = info.trimmed();
+    temp.prepend("                                       ");
+    temp.append ("                                       ");
+
+    infoLine->setText(temp);
 }
 
 void InfoDisplay::setRunning(bool flag)
 {
-  if(flag){
-    tictoc->start( speed  );
-  }else
-    tictoc->stop();
+    if(flag){
+        tictoc->start( speed  );
+    }else
+        tictoc->stop();
 }
 
 void InfoDisplay::setSpeed( int speed )
 {
-  this->speed = speed;
-  if(tictoc->isActive())
-    tictoc->start( speed );
+    this->speed = speed;
+    if(tictoc->isActive())
+        tictoc->start( speed );
 }
 
 void InfoDisplay::timeToScroll()
 {
-  int x;
-  
-  x = contentsX();
-  scrollBy( 1 , 0 );
+    int x;
 
-  if(x == contentsX())
-    scrollBy( -1024, 0);
+    //x = contentsX();
+    x = sb->height();
+    sb->scroll( 1 , 0 );
+
+    if(x == sb->height())
+        scroll( -1024, 0);
 
 }
 
 
 void InfoDisplay::infoMouseReleasedSlot() 
 {
-  editing = !editing;
-  emit editingMode( editing );
-  if(editing)
-    infoUpdate("Click HERE again after you done editing");
+    editing = !editing;
+    emit editingMode( editing );
+    if(editing)
+        infoUpdate("Click HERE again after you done editing");
 }
 
 
 AliasDisplay::AliasDisplay(QWidget * parent, const char * name)
-  : QLineEdit(parent, name)
+    : QLineEdit( )
 {
-  QColorGroup cg(colorGroup());
-  
-  cg.setColor(QColorGroup::Text, Qt::cyan);
-  cg.setColor(QColorGroup::Base, Qt::black);
-  cg.setColor(QColorGroup::Background, Qt::black);
+    QPalette cg;
 
-  setPalette( QPalette(cg, cg, cg) );
+    cg.setColor(QPalette::Text, Qt::cyan);
+    cg.setColor(QPalette::Dark, Qt::black);
+    cg.setColor(QPalette::Window, Qt::black);
 
-  bzero(alias, ALIASSIZE);
-  setMaxLength( ALIASSIZE );
-  setReadOnly( true );
-  setFrame( false );
-  setFocusPolicy( ClickFocus );
-  connect( this, SIGNAL(returnPressed()), 
-	   this, SLOT(returnPressedSlot()));
+    //setPalette( QPalette(cg, cg, cg) );
+
+    memset(alias, 0, ALIASSIZE);
+    setMaxLength( ALIASSIZE );
+    setReadOnly( true );
+    setFrame( false );
+    setFocusPolicy( Qt::ClickFocus );
+    connect( this, SIGNAL(returnPressed()),
+             this, SLOT(returnPressedSlot()));
 }
 
 
 void AliasDisplay::aliasUpdate(const char *alias )
 {
-  strncpy( this->alias, alias, ALIASSIZE);
-  setText(alias);
+    strncpy_s( this->alias, alias, ALIASSIZE);
+    setText(alias);
 }
 
 void AliasDisplay::mouseReleaseEvent ( QMouseEvent * e)
 {
-  QColorGroup cg(colorGroup());
+    QPalette cg;
 
-  if(isReadOnly()){
+    if(isReadOnly()){
 
-    cg.setColor(QColorGroup::Text, Qt::yellow);
-    cg.setColor(QColorGroup::Base, Qt::darkGreen);
-    cg.setColor(QColorGroup::Background, Qt::darkGreen);
-    setPalette( QPalette(cg, cg, cg) );
-    repaint();
+        cg.setColor(QPalette::Text, Qt::yellow);
+        cg.setColor(QPalette::Dark, Qt::darkGreen);
+        cg.setColor(QPalette::Window, Qt::darkGreen);
+        //setPalette( QPalette(cg, cg, cg) );
+        repaint();
 
-    setReadOnly( false );
-  }else{
-    returnPressedSlot();
-  }
+        setReadOnly( false );
+    }else{
+        returnPressedSlot();
+    }
 }
 
 
 void AliasDisplay::returnPressedSlot()
 {
-  QString str;
-  QColorGroup cg(colorGroup());
+    QString str;
+    QPalette cg;
 
-  setReadOnly( true );
-  if(edited()){
-    strncpy(alias, (const char *)text(), ALIASSIZE);
-    emit setAlias(alias);
-  }
+    setReadOnly( true );
+    if(isModified()){
+        strncpy_s(alias, (const char *)text().toLatin1(), ALIASSIZE);
+        emit setAlias(alias);
+    }
 
-  cg.setColor(QColorGroup::Text, Qt::cyan);
-  cg.setColor(QColorGroup::Base, Qt::black);
-  cg.setColor(QColorGroup::Background, Qt::black);
+    cg.setColor(QPalette::Text, Qt::cyan);
+    cg.setColor(QPalette::Dark, Qt::black);
+    cg.setColor(QPalette::Window, Qt::black);
 
-  setPalette( QPalette(cg, cg, cg) );
-  repaint();
+    //setPalette( QPalette(cg, cg, cg) );
+    repaint();
 
-  focusNextPrevChild( false );
+    focusNextPrevChild( false );
 }
-*/
+
