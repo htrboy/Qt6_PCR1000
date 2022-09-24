@@ -21,21 +21,22 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
+
 #include "bargraph.h"
 
 #include <stdio.h>
 #include <math.h>
-#include <qpainter.h>
+#include <QPainter>
+#include <QMouseEvent>
 
 BarGraph::BarGraph( QWidget *parent, const char *name)
-  : QWidget( parent, name )
+  : QWidget( )
 {
-  bzero(data, 256);
+  memset(data, 0, 256);
   nsamples = 0;
   active = true;
   setPalette( QPalette( Qt::black ) );
-//  setFocusPolicy( ClickFocus );
+  setFocusPolicy( Qt::ClickFocus );
 }
 
 
@@ -51,7 +52,7 @@ void BarGraph::setData(const unsigned char *bandScope, unsigned char val)
 
 void BarGraph::setZero()
 {
-  bzero(data, 256);
+  memset(data, 0, 256);
   repaint();
 }
 
@@ -103,9 +104,9 @@ void BarGraph::paintEvent( QPaintEvent * )
 
 
 //
-// mousrPressEvent captures when user press on the graph
+// mousePressEvent captures when a user clicks on the graph
 // to change freqency. It sends a signal stepFreq( int )
-// the integer begin how many steps to shift
+// the integer begins how many steps to shift
 //
 void BarGraph::mousePressEvent( QMouseEvent *e )
 {
@@ -115,4 +116,5 @@ void BarGraph::mousePressEvent( QMouseEvent *e )
 
 	emit stepFreq( (int) rint(bar) );
 }
-*/
+
+
