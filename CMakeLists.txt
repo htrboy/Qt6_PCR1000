@@ -11,39 +11,39 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Quick Widgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick Widgets REQUIRED)
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Quick Widgets Gui Core5Compat REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick Widgets Gui Core5Compat REQUIRED)
 
 set(PROJECT_SOURCES
         main.cpp
         qml.qrc
 
-#        aliasdisplay.cpp
-#        aliasdisplay.h
-#        bargraph.cpp
-#        bargraph.h
-#        bmdata.cpp
-#        bmdata.h
-#        bmtree.cpp
-#        bmtree.h
-#        dial.cpp
-#        dial.h
-#        filterctrl.cpp
-#        filterctrl.h
-#        filterdisplay.cpp
-#        filterdisplay.h
-#        freqdisplay.cpp
-#        freqdisplay.h
-#        keypad.cpp
-#        keypad.h
-#        meter.cpp
-#        meter.h
-#        modectrl.cpp
-#        modectrl.h
-#        modedisplay.cpp
-#        modedisplay.h
-#        monitor.cpp
-#        monitor.h
+        aliasdisplay.cpp
+        aliasdisplay.h
+        bargraph.cpp
+        bargraph.h
+        bmdata.cpp
+        bmdata.h
+        bmtree.cpp
+        bmtree.h
+        dial.cpp
+        dial.h
+        filterctrl.cpp
+        filterctrl.h
+        filterdisplay.cpp
+        filterdisplay.h
+        freqdisplay.cpp
+        freqdisplay.h
+        keypad.cpp
+        keypad.h
+        meter.cpp
+        meter.h
+        modectrl.cpp
+        modectrl.h
+        modedisplay.cpp
+        modedisplay.h
+        monitor.cpp
+        monitor.h
         pcrio.cpp
         pcrio.h
         pcrproto.h
@@ -51,15 +51,15 @@ set(PROJECT_SOURCES
         pcrproxy.h
         qtpcr.cpp
         qtpcr.h
-#        scan.cpp
-#        scan.h
-#        scandialog.cpp
-#        scandialog.h
-#        squctrl.cpp
-#        squctrl.h
-#        tips.h
-#        volctrl.cpp
-#        volctrl.h
+        scan.cpp
+        scan.h
+        scandialog.cpp
+        scandialog.h
+        squctrl.cpp
+        squctrl.h
+        tips.h
+        volctrl.cpp
+        volctrl.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -88,7 +88,8 @@ endif()
 target_compile_definitions(qt6_pcr1000
   PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 target_link_libraries(qt6_pcr1000
-  PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Widgets)
+  PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Gui
+                Qt${QT_VERSION_MAJOR}::Core5Compat)
 
 set_target_properties(qt6_pcr1000 PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
@@ -104,3 +105,4 @@ if(QT_VERSION_MAJOR EQUAL 6)
     qt_import_qml_plugins(qt6_pcr1000)
     qt_finalize_executable(qt6_pcr1000)
 endif()
+
